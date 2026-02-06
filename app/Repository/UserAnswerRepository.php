@@ -1,0 +1,308 @@
+<?php
+
+namespace App\Repository;
+
+use App\Models\Option;
+use App\Models\Question;
+use App\Models\StudentAnswer;
+use App\Repository\Interface\IUserAnswerRepository;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
+class UserAnswerRepository implements IUserAnswerRepository
+{
+    protected $studentAnswer;
+
+    public function __construct(StudentAnswer $studentAnswer)
+    {
+        $this->studentAnswer = $studentAnswer;
+    }
+
+    public function getAll()
+    {
+        return $this->studentAnswer->with(['student', 'question', 'selectedOption'])->get();
+    }
+
+    public function getById($id)
+    {
+        return $this->studentAnswer->with(['student', 'question', 'selectedOption'])->find($id);
+    }
+
+    public function store(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            $data = $request->all();
+            $quiz_id = $data['quiz_id'];
+            $answers = $data['answers'];
+
+            // Get all questions for this quiz
+            $questionIds = array_map(function ($answer) {
+                return $answer['question_id'];
+            }, $answers);
+
+            $questions = Question::with(['options', 'matchPairs'])
+                ->whereIn('id', $questionIds)
+                ->get()
+                ->keyBy('id');
+
+            $results = [];
+            $total_quiz_score = 0;
+
+            foreach ($answers as $answer) {
+                $question = $questions[$answer['question_id']];
+                $score = 0;
+                $is_correct = false;
+                $question_score = 0;
+
+                switch ($question->type) {
+                    case 'essay':
+                        $score = 0;
+                        $is_correct = false;
+                        break;
+
+                    case 'choice_image':
+                        if ($answer['answer_option_id']) {
+                            // Get the selected option
+                            $selectedOption = $question->options->firstWhere('id', $answer['answer_option_id']);
+                            $answer['answer_image'] = $selectedOption->option_image;
+                            Log::info($answer);
+                            if ($selectedOption && $selectedOption->is_correct) {
+                                $score = $question->score;
+                                $question_score = $score;
+                                $is_correct = true;
+                            }
+                        }
+                        break;
+
+                    case 'match_image':
+                        if ($answer['answer_text']) {
+                            // Parse the matching pairs from answer_text
+                            $userPairs = json_decode($answer['answer_text'], true);
+                            if ($userPairs) {
+                                // Get correct pairs from question
+                                $correctPairs = $question->matchPairs->map(function ($pair) {
+                                    return [
+                                        'left_id' => $pair->id,
+                                        'right_id' => $pair->id
+                                    ];
+                                })->toArray();
+
+                                // Compare user pairs with correct pairs
+                                $correctCount = 0;
+                                foreach ($userPairs as $userPair) {
+                                    foreach ($correctPairs as $correctPair) {
+                                        if (
+                                            $userPair['left_id'] == $correctPair['left_id'] &&
+                                            $userPair['right_id'] == $correctPair['right_id']
+                                        ) {
+                                            $correctCount++;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                // Calculate partial score based on correct matches
+                                if ($correctCount > 0) {
+                                    $totalPairs = count($correctPairs);
+                                    $score = ($correctCount / $totalPairs) * $question->score;
+                                    $question_score = $score;
+                                    $is_correct = ($correctCount == $totalPairs);
+                                }
+                            }
+                        }
+                        break;
+                }
+
+                $studentAnswer = $this->studentAnswer->create([
+                    'student_id' => $answer['student_id'],
+                    'question_id' => $answer['question_id'],
+                    'answer_text' => $answer['answer_text'],
+                    'answer_option_id' => $answer['answer_option_id'],
+                    'answer_image' => $answer['answer_image'],
+                    'submitted_at' => $answer['submitted_at'],
+                    'is_correct' => $is_correct,
+                    'score' => $score,
+                    'feedback' => null
+                ]);
+
+                $total_quiz_score += $question_score;
+
+                $results[] = $studentAnswer;
+            }
+
+            DB::commit();
+
+            return [
+                'answers' => $results,
+                'total_quiz_score' => $total_quiz_score
+            ];
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error storing answers: ' . $e->getMessage());
+            return [
+                'status' => false,
+                'message' => 'Error storing answers: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    public function update(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+            $data = $request->all();
+
+            $quiz_id = $data['quiz_id'];
+            $answers = $data['answers'];
+            $results = [];
+            $total_quiz_score = 0;
+
+            // Get all questions for this quiz
+            $questionIds = array_map(function ($answer) {
+                return $answer['question_id'];
+            }, $answers);
+
+            $questions = Question::with(['options', 'matchPairs'])
+                ->whereIn('id', $questionIds)
+                ->get()
+                ->keyBy('id');
+
+            foreach ($answers as $answer) {
+                $question = $questions[$answer['question_id']];
+                $score = 0;
+                $is_correct = false;
+                $question_score = 0;
+
+                switch ($question->type) {
+                    case 'essay':
+                        $score = 0;
+                        $is_correct = false;
+                        break;
+
+                    case 'choice_image':
+                        if ($answer['answer_option_id']) {
+                            // Get the selected option
+                            $selectedOption = $question->options->firstWhere('id', $answer['answer_option_id']);
+                            $answer['answer_image'] = $selectedOption->option_image;
+                            if ($selectedOption && $selectedOption->is_correct) {
+                                $score = $question->score;
+                                $question_score = $score;
+                                $is_correct = true;
+                            }
+                        }
+                        break;
+
+                    case 'match_image':
+                        if ($answer['answer_text']) {
+                            // Parse the matching pairs from answer_text
+                            $userPairs = json_decode($answer['answer_text'], true);
+                            if ($userPairs) {
+                                // Get correct pairs from question
+                                $correctPairs = $question->matchPairs->map(function ($pair) {
+                                    return [
+                                        'left_id' => $pair->id,
+                                        'right_id' => $pair->id
+                                    ];
+                                })->toArray();
+
+                                // Compare user pairs with correct pairs
+                                $correctCount = 0;
+                                foreach ($userPairs as $userPair) {
+                                    foreach ($correctPairs as $correctPair) {
+                                        if (
+                                            $userPair['left_id'] == $correctPair['left_id'] &&
+                                            $userPair['right_id'] == $correctPair['right_id']
+                                        ) {
+                                            $correctCount++;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                // Calculate partial score based on correct matches
+                                if ($correctCount > 0) {
+                                    $totalPairs = count($correctPairs);
+                                    $score = ($correctCount / $totalPairs) * $question->score;
+                                    $question_score = $score;
+                                    $is_correct = ($correctCount == $totalPairs);
+                                }
+                            }
+                        }
+                        break;
+                }
+
+                // Update or create student answer
+                if (isset($answer['id'])) {
+                    // Update existing answer
+                    $studentAnswer = $this->studentAnswer->findOrFail($answer['id']);
+                    $studentAnswer->update([
+                        'student_id' => $answer['student_id'],
+                        'question_id' => $answer['question_id'],
+                        'answer_text' => $answer['answer_text'],
+                        'answer_option_id' => $answer['answer_option_id'],
+                        'answer_image' => $answer['answer_image'],
+                        'submitted_at' => $answer['submitted_at'],
+                        'is_correct' => $is_correct,
+                        'score' => $score,
+                        'feedback' => $answer['feedback'] ?? null
+                    ]);
+                }
+
+                $total_quiz_score += $question_score;
+                $results[] = $studentAnswer;
+            }
+
+            DB::commit();
+            return [
+                'answers' => $results,
+                'total_quiz_score' => $total_quiz_score
+            ];
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error updating student answer: ' . $e->getMessage());
+            return [
+                'status' => false,
+                'message' => 'Error updating student answer: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    public function delete(Request $request)
+    {
+        try {
+            $ids = $request->input('ids'); // now expecting array
+
+            if (!is_array($ids) || empty($ids)) {
+                return [
+                    'status' => false,
+                    'message' => 'Tidak ada ID yang diberikan untuk penghapusan',
+                ];
+            }
+
+            $deletedCount = 0;
+
+            foreach ($ids as $id) {
+                $studentAnswer = $this->studentAnswer->find($id);
+                if ($studentAnswer) {
+                    $studentAnswer->delete();
+                    $deletedCount++;
+                }
+            }
+
+            return [
+                'status' => true,
+                'message' => "{$deletedCount} jawaban siswa berhasil dihapus",
+                'deleted_count' => $deletedCount
+            ];
+        } catch (\Exception $e) {
+            Log::error('Error menghapus jawaban: ' . $e->getMessage());
+            return [
+                'status' => false,
+                'message' => 'Error menghapus jawaban: ' . $e->getMessage()
+            ];
+        }
+    }
+}

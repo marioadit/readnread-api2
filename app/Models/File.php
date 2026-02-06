@@ -1,0 +1,28 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class File extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'owner_type',
+        'owner_id',
+        'file_path',
+        'file_name',
+        'file_type',
+        'file_size',
+    ];
+
+    /**
+     * Mendapatkan model pemilik file
+     */
+    public function owner()
+    {
+        return $this->morphTo();
+    }
+}
