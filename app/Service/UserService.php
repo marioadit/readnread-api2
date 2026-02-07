@@ -69,7 +69,8 @@ class UserService
         return $this->userRepository->getClassUser();
     }
 
-    public function getUserLesson() {
+    public function getUserLesson()
+    {
         return $this->userRepository->getUserLesson();
     }
 
@@ -81,6 +82,16 @@ class UserService
     public function getAllStudentAnswers()
     {
         return $this->userRepository->getAllStudentAnswers();
+    }
+
+    public function getStudentAnswersAdmin($idstudent, $idanswer)
+    {
+        return $this->userRepository->getStudentAnswersAdmin($idstudent, $idanswer);
+    }
+
+    public function getAllStudentAnswersAdmin($idstudent)
+    {
+        return $this->userRepository->getAllStudentAnswersAdmin($idstudent);
     }
 
     public function getUserQuiz()

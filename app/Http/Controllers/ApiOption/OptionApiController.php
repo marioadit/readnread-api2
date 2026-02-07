@@ -42,7 +42,7 @@ class OptionApiController extends Controller
         $result = $this->optionRepository->create($request->all());
 
         if (!$result['status']) {
-            return ApiResponse::error($result['message'], 400, $result['errors'] ?? null);
+            return ApiResponse::error($result['message'], 422, $result['errors'] ?? null);
         }
 
         return ApiResponse::success($result['data'], $result['message'], 201);
@@ -56,7 +56,7 @@ class OptionApiController extends Controller
         $result = $this->optionRepository->update($id, $request);
 
         if (!$result['status']) {
-            return ApiResponse::error($result['message'], 400, $result['errors'] ?? null);
+            return ApiResponse::error($result['message'], 422, $result['errors'] ?? null);
         }
 
         return ApiResponse::success($result['data'], $result['message']);
@@ -70,7 +70,7 @@ class OptionApiController extends Controller
         $result = $this->optionRepository->delete($id);
 
         if (!$result['status']) {
-            return ApiResponse::error($result['message'], 400, $result['errors'] ?? null);
+            return ApiResponse::error($result['message'], 404, $result['errors'] ?? null);
         }
 
         return ApiResponse::success(null, 'Opsi berhasil dihapus');

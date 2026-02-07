@@ -134,7 +134,7 @@ class LessonRepository implements LessonRepositoryInterface
     {
         $lesson = $this->model->findOrFail($id);
         $lesson->delete();
-        if(!$lesson) {
+        if (!$lesson) {
             return [
                 'status' => false,
                 'message' => 'Pelajaran tidak ditemukan',
@@ -157,7 +157,25 @@ class LessonRepository implements LessonRepositoryInterface
 
     public function getLessonsByClass($classId)
     {
-        return $this->model->where('class_id', $classId)->get();
+        // Cek keberadaan kelas dengan exists()
+        $classExists = \App\Models\Classes::where('id', $classId)->exists();
+        // $classExists = $this->model->where('id', $classId)->exists();
+
+        if (!$classExists) {
+            return [
+                'status' => false,
+                'message' => 'Kelas tidak ditemukan',
+                'data' => null
+            ];
+        }
+
+        $lessons = $this->model->where('class_id', $classId)->get();
+
+        return [
+            'status' => true,
+            'message' => $lessons->isEmpty() ? 'Tidak ada pelajaran untuk kelas ini' : 'Pelajaran ditemukan',
+            'data' => $lessons
+        ];
     }
 
     public function getLessonsByQuiz($lessonId)

@@ -56,7 +56,7 @@ class QuizApiController extends Controller
         $quiz = $this->quizRepository->create($request->all());
 
         if (!$quiz['status']) {
-            return ApiResponse::error($quiz['message'], 400, $quiz['errors'] ?? null);
+            return ApiResponse::error($quiz['message'], 422, $quiz['errors'] ?? null);
         }
 
         return ApiResponse::success($quiz['data'], $quiz['message'], 201);
@@ -67,7 +67,7 @@ class QuizApiController extends Controller
         $quiz = $this->quizRepository->update($id, $request->all());
 
         if (!$quiz['status']) {
-            return ApiResponse::error($quiz['message'], 400, $quiz['errors'] ?? null);
+            return ApiResponse::error($quiz['message'], 422, $quiz['errors'] ?? null);
         }
 
         return ApiResponse::success($quiz['data'], $quiz['message']);
@@ -91,7 +91,7 @@ class QuizApiController extends Controller
         $result = $this->quizRepository->getUserQuizResults($studentId);
 
         if (!$result['status']) {
-            return ApiResponse::error($result['message'], 400);
+            return ApiResponse::error($result['message'], 422);
         }
 
         return ApiResponse::success($result['data'], $result['message']);

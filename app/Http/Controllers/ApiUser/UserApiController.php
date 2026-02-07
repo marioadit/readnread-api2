@@ -11,6 +11,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 class UserApiController extends Controller
 {
@@ -45,6 +46,12 @@ class UserApiController extends Controller
         return ApiResponse::success($user, 'User updated successfully');
     }
 
+    public function updateUser(UserValidate $request, $id)
+    {
+        $user = $this->userService->updateUser($id, $request->validated());
+        return ApiResponse::success($user, 'User updated successfully');
+    }
+
     public function destroy($id)
     {
         $deleted = $this->userService->deleteUser($id);
@@ -68,12 +75,14 @@ class UserApiController extends Controller
         return ApiResponse::success($user, 'User updated successfully');
     }
 
-    public function updatePassword(Request $request)
+    public function updatePassword($id, Request $request)
     {
         // Validate request first
         $validator = Validator::make($request->all(), [
             'current_password' => 'required',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => 'required|string
+            |min:8
+            |confirmed',
             'password_confirmation' => 'required|same:password'
         ]);
 
@@ -81,7 +90,7 @@ class UserApiController extends Controller
             return ApiResponse::error('Validation failed', 422, $validator->errors());
         }
 
-        $id = Auth::user()->id;
+        // $id = Auth::user()->id;
         $result = $this->userService->updatePassword($id, $request->all());
 
         if (!$result['status']) {
@@ -128,6 +137,18 @@ class UserApiController extends Controller
     public function getAllStudentAnswers()
     {
         $user = $this->userService->getAllStudentAnswers();
+        return ApiResponse::success($user);
+    }
+
+    public function getStudentAnswersAdmin($idstudent,$idanswer)
+    {
+        $user = $this->userService->getStudentAnswersAdmin($idstudent,$idanswer);
+        return ApiResponse::success($user);
+    }
+
+    public function getAllStudentAnswersAdmin($idstudent)
+    {
+        $user = $this->userService->getAllStudentAnswersAdmin($idstudent);
         return ApiResponse::success($user);
     }
 

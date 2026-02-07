@@ -3,7 +3,8 @@
 namespace App\Repository\Interface;
 
 
-interface UserRepositoryInterface {
+interface UserRepositoryInterface
+{
 
     public function getAll();
 
@@ -12,7 +13,7 @@ interface UserRepositoryInterface {
     public function create(array $data);
 
     public function update($id, array $data);
-    
+
     public function delete($id);
 
     public function getUserProfile();
@@ -20,6 +21,8 @@ interface UserRepositoryInterface {
     public function updateProfile($id, array $data);
 
     public function updatePassword($id, array $data);
+
+    public function updateUser($id, array $data);
 
     public function getUserStudent();
 
@@ -32,6 +35,10 @@ interface UserRepositoryInterface {
     public function getStudentAnswers($id);
 
     public function getAllStudentAnswers();
+
+    public function getStudentAnswersAdmin($idstudent, $idanswer);
+
+    public function getAllStudentAnswersAdmin($idstudent);
 
     public function getUserQuiz();
 }

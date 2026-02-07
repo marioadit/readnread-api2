@@ -44,7 +44,7 @@ class StudentAnswerApiController extends Controller
         $userAnswer = $this->userAnswerRepository->store($request);
 
         if (!$userAnswer) {
-            return ApiResponse::error('User answer not created', 400);
+            return ApiResponse::error('User answer not created', 422, $userAnswer['errors'] ?? null);
         }
 
         return ApiResponse::success($userAnswer, 'User answer created successfully');

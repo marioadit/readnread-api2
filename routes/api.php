@@ -10,6 +10,7 @@ use App\Http\Controllers\ApiUser\UserApiController;
 use App\Http\Controllers\ApiOption\OptionApiController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Symfony\Component\Mime\DependencyInjection\AddMimeTypeGuesserPass;
 
 /*
 |--------------------------------------------------------------------------
@@ -32,19 +33,25 @@ Route::post('/auth/register', [AuthApiController::class, 'register']);
 // logout
 Route::middleware('auth:sanctum')->delete('/auth/logout', [AuthApiController::class, 'logout']);
 Route::middleware(['auth:sanctum', 'check.token.expiration'])->group(function () {
-    // Admin routes
+    // Admin dan guru routes
     Route::middleware('role:admin')->group(function () {
         Route::prefix('admin')->group(function () {
             Route::prefix('users')->group(function () {
+                Route::get('/all-student-answers/{idstudent}', [UserApiController::class, 'getAllStudentAnswersAdmin']);
                 Route::get('/', [UserApiController::class, 'index']);
+
+                Route::get('/profile', [UserApiController::class, 'getUserProfile']);
                 Route::get('/{id}', [UserApiController::class, 'show']);
+
                 Route::post('/', [UserApiController::class, 'store']);
                 Route::put('/{id}', [UserApiController::class, 'update']);
                 Route::delete('/{id}', [UserApiController::class, 'destroy']);
 
-                Route::get('/student-answers/{id}', [UserApiController::class, 'getStudentAnswers']);
-                Route::get('/all-student-answers', [UserApiController::class, 'getAllStudentAnswers']);
+                Route::put('/profile/{id}', [UserApiController::class, 'updateProfile']);
+                Route::put('/password/{id}', [UserApiController::class, 'updatePassword']);
 
+
+                Route::get('/student-answers/{idstudent}/{idanswer}', [UserApiController::class, 'getStudentAnswersAdmin']);
             });
 
             Route::get('/user-quiz', [UserApiController::class, 'getUserQuiz']);
@@ -64,6 +71,8 @@ Route::middleware(['auth:sanctum', 'check.token.expiration'])->group(function ()
                 Route::get('/{id}/students', [ClassApiController::class, 'students']);
                 Route::post('/{id}/students', [ClassApiController::class, 'addStudent']);
                 Route::delete('/{id}/students', [ClassApiController::class, 'removeStudent']);
+
+                Route::get('/{id}/lessons', [LessonApiController::class, 'lessonsByClass']);
             });
 
             // Admin Lesson Routes
@@ -95,12 +104,12 @@ Route::middleware(['auth:sanctum', 'check.token.expiration'])->group(function ()
             });
 
             Route::prefix('questions')->group(function () {
+                Route::get('/all-student-answers', [QuestionApiController::class, 'getAllStudentAnswers']);
                 Route::get('/', [QuestionApiController::class, 'index']);
                 Route::get('/{id}', [QuestionApiController::class, 'show']);
                 Route::post('/', [QuestionApiController::class, 'store']);
                 Route::put('/{id}', [QuestionApiController::class, 'update']);
                 Route::delete('/{id}', [QuestionApiController::class, 'destroy']);
-                Route::get('/all-student-answers', [QuestionApiController::class, 'getAllStudentAnswers']);
                 Route::get('/{id}/student-answers', [QuestionApiController::class, 'getStudentAnswers']);
                 Route::get('/{id}/detail', [QuestionApiController::class, 'detail']);
             });
@@ -130,14 +139,14 @@ Route::middleware(['auth:sanctum', 'check.token.expiration'])->group(function ()
     });
 
     // Siswa routes
-    Route::middleware(['auth', 'role:siswa'])->group(function () {
+    Route::middleware(['auth:sanctum', 'role:siswa'])->group(function () {
         Route::prefix('users')->group(function () {
+            Route::get('/all-student-answers', [UserApiController::class, 'getAllStudentAnswers']);
             Route::get('/profile', [UserApiController::class, 'getUserProfile']);
             Route::put('/profile/{id}', [UserApiController::class, 'updateProfile']);
-            Route::put('/password', [UserApiController::class, 'updatePassword']);
+            Route::put('/password/{id}', [UserApiController::class, 'updatePassword']);
 
             Route::get('/student-answers/{id}', [UserApiController::class, 'getStudentAnswers']);
-            Route::get('/all-student-answers', [UserApiController::class, 'getAllStudentAnswers']);
 
             Route::get('/classes', [UserApiController::class, 'getClassUser']);
 
@@ -171,21 +180,48 @@ Route::middleware(['auth:sanctum', 'check.token.expiration'])->group(function ()
             });
         });
     });
-
-    // Admin dan Guru routes
-    Route::middleware('role:admin,guru')->group(function () {
-        // Guru class routes
-        Route::prefix('classes')->group(function () {
-            Route::get('/my-classes', [ClassApiController::class, 'myClasses']);
-            Route::get('/{id}/students', [ClassApiController::class, 'students']);
-            Route::get('/{id}/lessons', [LessonApiController::class, 'lessonsByClass']);
-        });
-
-        // Guru lesson routes
-        Route::prefix('lessons')->group(function () {
-            Route::get('/{id}', [LessonApiController::class, 'show']);
-            Route::post('/', [LessonApiController::class, 'store']);
-            Route::put('/{id}', [LessonApiController::class, 'update']);
-        });
-    });
 });
+
+// Admin routes
+// Route::middleware('role:admin')->group(function () {
+//     Route::prefix('admin')->group(function () {
+//         Route::prefix('users')->group(function () {
+//             Route::get('/', [UserApiController::class, 'index']);
+//             Route::get('/{id}', [UserApiController::class, 'show']);
+//             Route::post('/', [UserApiController::class, 'store']);
+//             Route::put('/{id}', [UserApiController::class, 'update']);
+//             Route::delete('/{id}', [UserApiController::class, 'destroy']);
+
+//     });
+// });
+// });
+
+
+// Admin dan Guru routes
+// Route::middleware('role:admin,guru')->group(function () {
+//     route::prefix('admins')->group(function () {
+
+//         // User profile routes
+//         route::prefix('users')->group(function () {
+//             Route::get('/profile', [UserApiController::class, 'getUserProfile']);
+//             Route::put('/profile/{id}', [UserApiController::class, 'updateProfile']);
+//             // Route::put('/password', [UserApiController::class, 'updatePassword']);
+//             Route::put('/password/{id}', [UserApiController::class, 'updatePassword']);
+//             Route::put('/{id}', [UserApiController::class, 'updateUser']);
+//         });
+//         // Guru class routes
+//         Route::prefix('classes')->group(function () {
+//             Route::get('/my-classes', [ClassApiController::class, 'myClasses']);
+//             Route::get('/{id}/students', [ClassApiController::class, 'students']);
+//             Route::get('/{id}/lessons', [LessonApiController::class, 'lessonsByClass']);
+//         });
+
+//         // Guru lesson routes
+//         Route::prefix('lessons')->group(function () {
+//             Route::get('/{id}', [LessonApiController::class, 'show']);
+//             Route::post('/', [LessonApiController::class, 'store']);
+//             Route::put('/{id}', [LessonApiController::class, 'update']);
+//         });
+//     });
+// });
+// });
