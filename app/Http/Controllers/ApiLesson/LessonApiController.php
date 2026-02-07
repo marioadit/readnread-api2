@@ -43,7 +43,7 @@ class LessonApiController extends Controller
         $result = $this->lessonRepository->create($request->all());
 
         if (!$result['status']) {
-            return ApiResponse::error($result['message'], 400, $result['errors'] ?? null);
+            return ApiResponse::error($result['message'], 422, $result['errors'] ?? null);
         }
 
         return ApiResponse::success($result['data'], $result['message'], 201);
@@ -58,7 +58,7 @@ class LessonApiController extends Controller
         $result = $this->lessonRepository->update($id, $request);
 
         if (!$result['status']) {
-            return ApiResponse::error($result['message'], 400, $result['errors'] ?? null);
+            return ApiResponse::error($result['message'], 422, $result['errors'] ?? null);
         }
 
         return ApiResponse::success($result['data'], $result['message']);
@@ -84,6 +84,11 @@ class LessonApiController extends Controller
     public function lessonsByClass($classId)
     {
         $lessons = $this->lessonRepository->getLessonsByClass($classId);
+
+        if (!$lessons['status']) {
+            return ApiResponse::error($lessons['message'], 404, $lessons['errors'] ?? null);
+        }
+
         return ApiResponse::success($lessons);
     }
 

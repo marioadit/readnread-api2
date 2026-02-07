@@ -66,7 +66,7 @@ class QuizRepository implements QuizRepositoryInterface
 
         return [
             'status' => true,
-            'message' => 'Kelas berhasil dibuat',
+            'message' => 'Kuis berhasil dibuat',
             'data' => $quiz
         ];
     }
@@ -95,7 +95,7 @@ class QuizRepository implements QuizRepositoryInterface
 
         return [
             'status' => true,
-            'message' => 'Kelas berhasil diperbarui',
+            'message' => 'Kuis berhasil diperbarui',
             'data' => $quiz
         ];
     }
@@ -105,7 +105,7 @@ class QuizRepository implements QuizRepositoryInterface
         $quiz->delete();
         return [
             'status' => true,
-            'message' => 'Kelas berhasil dihapus'
+            'message' => 'Kuis berhasil dihapus'
         ];
     }
 
@@ -113,13 +113,17 @@ class QuizRepository implements QuizRepositoryInterface
     {
         try {
             $quiz = $this->model
-                ->with(['questions.studentAnswers' => function ($query) use ($studentId) {
-                    $query->where('student_id', $studentId)
-                          ->orderBy('created_at', 'desc');
-                }])
-                ->with(['questions' => function ($query) {
-                    $query->orderBy('order');
-                }])
+                ->with([
+                    'questions.studentAnswers' => function ($query) use ($studentId) {
+                        $query->where('student_id', $studentId)
+                            ->orderBy('created_at', 'desc');
+                    }
+                ])
+                ->with([
+                    'questions' => function ($query) {
+                        $query->orderBy('order');
+                    }
+                ])
                 ->with('questions.options')
                 ->findOrFail($quizId);
 
@@ -130,14 +134,14 @@ class QuizRepository implements QuizRepositoryInterface
 
             foreach ($quiz->questions as $question) {
                 $maxPossibleScore += $question->score;
-                
+
                 // Get the latest answer for this question
                 $latestAnswer = $question->studentAnswers->first();
-                
+
                 if ($latestAnswer) {
                     $answeredQuestions++;
                     $totalScore += $latestAnswer->score;
-                    
+
                     if ($latestAnswer->is_correct) {
                         $correctAnswers++;
                     }
@@ -195,9 +199,13 @@ class QuizRepository implements QuizRepositoryInterface
                 ->whereHas('questions.studentAnswers', function ($query) use ($studentId) {
                     $query->where('student_id', $studentId);
                 })
-                ->with(['questions.studentAnswers' => function ($query) use ($studentId) {
-                    $query->where('student_id', $studentId);
-                }, 'questions.options', 'lesson'])
+                ->with([
+                    'questions.studentAnswers' => function ($query) use ($studentId) {
+                        $query->where('student_id', $studentId);
+                    },
+                    'questions.options',
+                    'lesson'
+                ])
                 ->with([
                     'questions.studentAnswers.student' => function ($query) use ($studentId) {
                         $query->where('id', $studentId);

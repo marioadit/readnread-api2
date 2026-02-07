@@ -54,6 +54,7 @@ class AuthRepository implements AuthRepositoryInterface
         $validator = Validator::make($data, [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users',
+            // 'password' => 'required|confirmed',
             'password' => 'required|min:8|confirmed',
             'password_confirmation' => 'required|same:password',
             'role' => 'sometimes|in:siswa,guru,admin',

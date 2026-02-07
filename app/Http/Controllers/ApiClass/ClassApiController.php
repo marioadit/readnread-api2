@@ -41,11 +41,11 @@ class ClassApiController extends Controller
     public function store(Request $request)
     {
         $result = $this->classRepository->create($request->all());
-        
+
         if (!$result['status']) {
             return ApiResponse::error($result['message'], 400, $result['errors'] ?? null);
         }
-        
+
         return ApiResponse::success($result['data'], $result['message'], 201);
     }
 
@@ -55,11 +55,11 @@ class ClassApiController extends Controller
     public function update(Request $request, $id)
     {
         $result = $this->classRepository->update($id, $request->all());
-        
+
         if (!$result['status']) {
             return ApiResponse::error($result['message'], 400, $result['errors'] ?? null);
         }
-        
+
         return ApiResponse::success($result['data'], $result['message']);
     }
 
@@ -69,11 +69,11 @@ class ClassApiController extends Controller
     public function destroy($id)
     {
         $result = $this->classRepository->delete($id);
-        
+
         if (!$result['status']) {
             return ApiResponse::error($result['message'], 400);
         }
-        
+
         return ApiResponse::success(null, $result['message']);
     }
 
@@ -104,13 +104,13 @@ class ClassApiController extends Controller
         $request->validate([
             'student_id' => 'required|exists:users,id'
         ]);
-        
+
         $result = $this->classRepository->addStudentToClass($classId, $request->student_id);
-        
+
         if (!$result['status']) {
             return ApiResponse::error($result['message'], 400);
         }
-        
+
         return ApiResponse::success(null, $result['message']);
     }
 
@@ -122,9 +122,9 @@ class ClassApiController extends Controller
         $request->validate([
             'student_id' => 'required|exists:users,id'
         ]);
-        
+
         $result = $this->classRepository->removeStudentFromClass($classId, $request->student_id);
-        
+
         return ApiResponse::success(null, $result['message']);
     }
 }

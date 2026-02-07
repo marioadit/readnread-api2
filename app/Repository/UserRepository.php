@@ -79,11 +79,25 @@ class UserRepository implements UserRepositoryInterface
         ];
     }
 
+    public function resetPassword($id)
+    {
+        $user = $this->model->findOrFail($id);
+        $user->password = Hash::make('password');
+        $user->save();
+        return [
+            'status' => true,
+            'message' => 'Password berhasil direset',
+            'data' => $user
+        ];
+    }
+
     public function updatePassword($id, array $data)
     {
         $validator = Validator::make($data, [
             'current_password' => 'required',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => 'required|string
+            |min:8
+            |confirmed',
             'password_confirmation' => 'required|same:password'
         ]);
 
@@ -95,6 +109,7 @@ class UserRepository implements UserRepositoryInterface
             ];
         }
 
+        // Load user by id (caller passes authenticated user's id)
         $user = $this->model->findOrFail($id);
 
         // Check if current password matches
@@ -113,6 +128,32 @@ class UserRepository implements UserRepositoryInterface
         return [
             'status' => true,
             'message' => 'Password berhasil diperbarui',
+            'data' => $user
+        ];
+    }
+
+    public function updateUser($id, array $data)
+    {
+        $validator = Validator::make($data, [
+            'name' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:users,email,' . $id,
+            'password' => 'sometimes|min:8',
+            'role' => 'sometimes|in:siswa,guru,admin'
+        ]);
+
+        if ($validator->fails()) {
+            return [
+                'status' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ];
+        }
+
+        $user = $this->model->findOrFail($id);
+        $user->update($data);
+        return [
+            'status' => true,
+            'message' => 'User berhasil diperbarui',
             'data' => $user
         ];
     }
@@ -178,6 +219,21 @@ class UserRepository implements UserRepositoryInterface
         return $this->model->with(['studentAnswers.question.options'])->findOrFail($user->id);
     }
 
+    public function getStudentAnswersAdmin($idstudent, $idanswer)
+    {
+        return $this->model->with([
+            'studentAnswers' => function ($query) use ($idanswer) {
+                $query->where('id', $idanswer);
+            },
+            'studentAnswers.question.options'
+        ])->findOrFail($idstudent);
+    }
+
+    public function getAllStudentAnswersAdmin($idstudent)
+    {
+        return $this->model->with(['studentAnswers.question.options'])->findOrFail($idstudent);
+    }
+
     public function getUserQuiz()
     {
         try {
@@ -185,7 +241,7 @@ class UserRepository implements UserRepositoryInterface
             $quiz = DB::table('users')
                 ->join('class_students as cs', 'users.id', '=', 'cs.student_id')
                 ->join('classes as c', 'cs.class_id', '=', 'c.id')
-                ->select('users.*', 'cs.class_id', 'cs.created_at as enrolled_at', 'c.name as class_name', 'c.level as kelas') 
+                ->select('users.*', 'cs.class_id', 'cs.created_at as enrolled_at', 'c.name as class_name', 'c.level as kelas')
                 ->get();
 
             Log::info($quiz);

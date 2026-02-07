@@ -32,7 +32,7 @@ class OptionRepository implements OptionRepositoryInterface
     {
         $validator = Validator::make($data, [
             'question_id' => 'required|exists:questions,id',
-            'option_text' => 'required|string|max:255',
+            'option_text' => 'nullable|string|max:255',
             'option_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'is_correct' => 'required|in:0,1',
             'order' => 'nullable|integer|min:0|max:9999999999',
@@ -60,7 +60,7 @@ class OptionRepository implements OptionRepositoryInterface
 
         return [
             'status' => true,
-            'message' => 'Option berhasil dibuat',
+            'message' => 'Opsi berhasil dibuat',
             'data' => $option,
         ];
     }
@@ -68,7 +68,7 @@ class OptionRepository implements OptionRepositoryInterface
     {
         $data = $request->all();
 
-        if(!$data) {
+        if (!$data) {
             return [
                 'status' => false,
                 'message' => 'Opsi tidak ditemukan',
@@ -77,7 +77,7 @@ class OptionRepository implements OptionRepositoryInterface
 
         $validator = Validator::make($data, [
             'question_id' => 'required|exists:questions,id',
-            'option_text' => 'required|string|max:255',
+            'option_text' => 'nullable|string|max:255',
             'option_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'is_correct' => 'required|in:0,1',
             'order' => 'nullable|integer|min:0|max:9999999999',
@@ -100,7 +100,7 @@ class OptionRepository implements OptionRepositoryInterface
         $option->order = $data['order'];
 
         if ($request->hasFile('option_image') && $request->file('option_image')->isValid()) {
-            if($oldImagePath){
+            if ($oldImagePath) {
                 $oldImagePath = str_replace('storage/', '', $oldImagePath);
                 if (Storage::disk('public')->exists($oldImagePath)) {
                     Storage::disk('public')->delete($oldImagePath);
@@ -123,7 +123,7 @@ class OptionRepository implements OptionRepositoryInterface
     }
     public function delete($id)
     {
-        $option = $this->getById($id);
+        $option = $this->model->findOrFail($id);
         $option->delete();
         if (!$option) {
             return [
@@ -141,7 +141,7 @@ class OptionRepository implements OptionRepositoryInterface
         }
         return [
             'status' => true,
-            'message' => 'Option deleted successfully'
+            'message' => 'Opsi berhasil dihapus',
         ];
     }
     public function getWithStudentAnswerandQuestion($optionId)
