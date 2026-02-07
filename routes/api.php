@@ -34,7 +34,7 @@ Route::post('/auth/register', [AuthApiController::class, 'register']);
 Route::middleware('auth:sanctum')->delete('/auth/logout', [AuthApiController::class, 'logout']);
 Route::middleware(['auth:sanctum', 'check.token.expiration'])->group(function () {
     // Admin dan guru routes
-    Route::middleware('role:admin')->group(function () {
+    Route::middleware('role:admin|guru')->group(function () {
         Route::prefix('admin')->group(function () {
             Route::prefix('users')->group(function () {
                 Route::get('/all-student-answers/{idstudent}', [UserApiController::class, 'getAllStudentAnswersAdmin']);
@@ -49,7 +49,7 @@ Route::middleware(['auth:sanctum', 'check.token.expiration'])->group(function ()
 
                 Route::put('/profile/{id}', [UserApiController::class, 'updateProfile']);
                 Route::put('/password/{id}', [UserApiController::class, 'updatePassword']);
-
+                Route::post('/reset-password/{id}', [UserApiController::class, 'resetPassword']);
 
                 Route::get('/student-answers/{idstudent}/{idanswer}', [UserApiController::class, 'getStudentAnswersAdmin']);
             });

@@ -49,6 +49,11 @@ class UserService
         return $this->userRepository->updateProfile($id, $data);
     }
 
+    public function resetPassword($id)
+    {
+        return $this->userRepository->resetPassword($id);
+    }
+
     public function updatePassword($id, array $data)
     {
         return $this->userRepository->updatePassword($id, $data);

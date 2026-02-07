@@ -79,6 +79,18 @@ class UserRepository implements UserRepositoryInterface
         ];
     }
 
+    public function resetPassword($id)
+    {
+        $user = $this->model->findOrFail($id);
+        $user->password = Hash::make('password');
+        $user->save();
+        return [
+            'status' => true,
+            'message' => 'Password berhasil direset',
+            'data' => $user
+        ];
+    }
+
     public function updatePassword($id, array $data)
     {
         $validator = Validator::make($data, [

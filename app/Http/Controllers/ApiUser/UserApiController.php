@@ -75,6 +75,12 @@ class UserApiController extends Controller
         return ApiResponse::success($user, 'User updated successfully');
     }
 
+    public function resetPassword($id)
+    {
+        $user = $this->userService->resetPassword($id);
+        return ApiResponse::success($user, 'User password reset successfully');
+    }
+
     public function updatePassword($id, Request $request)
     {
         // Validate request first
@@ -140,9 +146,9 @@ class UserApiController extends Controller
         return ApiResponse::success($user);
     }
 
-    public function getStudentAnswersAdmin($idstudent,$idanswer)
+    public function getStudentAnswersAdmin($idstudent, $idanswer)
     {
-        $user = $this->userService->getStudentAnswersAdmin($idstudent,$idanswer);
+        $user = $this->userService->getStudentAnswersAdmin($idstudent, $idanswer);
         return ApiResponse::success($user);
     }
 

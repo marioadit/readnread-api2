@@ -22,6 +22,8 @@ interface UserRepositoryInterface
 
     public function updatePassword($id, array $data);
 
+    public function resetPassword($id);
+
     public function updateUser($id, array $data);
 
     public function getUserStudent();
