@@ -5,7 +5,7 @@ namespace App\Repository;
 use App\Models\Option;
 use App\Models\Question;
 use App\Models\StudentAnswer;
-use App\Repository\Interface\IUserAnswerRepository;
+use App\Repository\Interfaces\IUserAnswerRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -85,8 +85,8 @@ class UserAnswerRepository implements IUserAnswerRepository
                                 // Get correct pairs from question
                                 $correctPairs = $question->matchPairs->map(function ($pair) {
                                     return [
-                                        'left_id' => $pair->id,
-                                        'right_id' => $pair->id
+                                    'left_id' => $pair->id,
+                                    'right_id' => $pair->id
                                     ];
                                 })->toArray();
 
@@ -95,8 +95,8 @@ class UserAnswerRepository implements IUserAnswerRepository
                                 foreach ($userPairs as $userPair) {
                                     foreach ($correctPairs as $correctPair) {
                                         if (
-                                            $userPair['left_id'] == $correctPair['left_id'] &&
-                                            $userPair['right_id'] == $correctPair['right_id']
+                                        $userPair['left_id'] == $correctPair['left_id'] &&
+                                        $userPair['right_id'] == $correctPair['right_id']
                                         ) {
                                             $correctCount++;
                                             break;
@@ -139,7 +139,8 @@ class UserAnswerRepository implements IUserAnswerRepository
                 'answers' => $results,
                 'total_quiz_score' => $total_quiz_score
             ];
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error storing answers: ' . $e->getMessage());
             return [
@@ -203,8 +204,8 @@ class UserAnswerRepository implements IUserAnswerRepository
                                 // Get correct pairs from question
                                 $correctPairs = $question->matchPairs->map(function ($pair) {
                                     return [
-                                        'left_id' => $pair->id,
-                                        'right_id' => $pair->id
+                                    'left_id' => $pair->id,
+                                    'right_id' => $pair->id
                                     ];
                                 })->toArray();
 
@@ -213,8 +214,8 @@ class UserAnswerRepository implements IUserAnswerRepository
                                 foreach ($userPairs as $userPair) {
                                     foreach ($correctPairs as $correctPair) {
                                         if (
-                                            $userPair['left_id'] == $correctPair['left_id'] &&
-                                            $userPair['right_id'] == $correctPair['right_id']
+                                        $userPair['left_id'] == $correctPair['left_id'] &&
+                                        $userPair['right_id'] == $correctPair['right_id']
                                         ) {
                                             $correctCount++;
                                             break;
@@ -260,7 +261,8 @@ class UserAnswerRepository implements IUserAnswerRepository
                 'answers' => $results,
                 'total_quiz_score' => $total_quiz_score
             ];
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error updating student answer: ' . $e->getMessage());
             return [
@@ -297,7 +299,8 @@ class UserAnswerRepository implements IUserAnswerRepository
                 'message' => "{$deletedCount} jawaban siswa berhasil dihapus",
                 'deleted_count' => $deletedCount
             ];
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             Log::error('Error menghapus jawaban: ' . $e->getMessage());
             return [
                 'status' => false,

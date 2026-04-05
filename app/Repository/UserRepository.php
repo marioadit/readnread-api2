@@ -3,7 +3,7 @@
 namespace App\Repository;
 
 use App\Models\User;
-use App\Repository\Interface\UserRepositoryInterface;
+use App\Repository\Interfaces\UserRepositoryInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -223,8 +223,8 @@ class UserRepository implements UserRepositoryInterface
     {
         return $this->model->with([
             'studentAnswers' => function ($query) use ($idanswer) {
-                $query->where('id', $idanswer);
-            },
+            $query->where('id', $idanswer);
+        },
             'studentAnswers.question.options'
         ])->findOrFail($idstudent);
     }
@@ -251,7 +251,8 @@ class UserRepository implements UserRepositoryInterface
                 'message' => 'User quiz retrieved successfully',
                 'data' => $quiz
             ];
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             return [
                 'status' => false,
                 'message' => 'Error retrieving user quiz: ' . $e->getMessage()

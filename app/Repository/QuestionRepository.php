@@ -2,7 +2,7 @@
 
 namespace App\Repository;
 
-use App\Repository\Interface\QuestionRepositoryInterface;
+use App\Repository\Interfaces\QuestionRepositoryInterface;
 use App\Models\Question;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\UploadedFile;
@@ -157,7 +157,8 @@ class QuestionRepository implements QuestionRepositoryInterface
                 'data' => $this->getWithRelations($question->id)
             ];
 
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             DB::rollBack();
             return [
                 'status' => false,
@@ -280,7 +281,8 @@ class QuestionRepository implements QuestionRepositoryInterface
                 'data' => $createdQuestions
             ];
 
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             DB::rollBack();
             return [
                 'status' => false,
@@ -293,7 +295,7 @@ class QuestionRepository implements QuestionRepositoryInterface
     {
         // Restructure the options data if it's in array-like format
         $restructuredData = $this->restructureData($data);
-        
+
         // Log the restructured data
         Log::info('Restructured update data:', ['data' => $restructuredData]);
 
@@ -365,7 +367,7 @@ class QuestionRepository implements QuestionRepositoryInterface
             if (isset($data['options'])) {
                 // Delete existing options not in the update data
                 $existingOptionIds = collect($data['options'])->pluck('id')->filter()->toArray();
-                $question->options()->whereNotIn('id', $existingOptionIds)->get()->each(function($option) {
+                $question->options()->whereNotIn('id', $existingOptionIds)->get()->each(function ($option) {
                     if ($option->option_image) {
                         $oldPath = str_replace('storage/', '', $option->option_image);
                         Storage::disk('public')->delete($oldPath);
@@ -390,7 +392,7 @@ class QuestionRepository implements QuestionRepositoryInterface
                                 $oldPath = str_replace('storage/', '', $option->option_image);
                                 Storage::disk('public')->delete($oldPath);
                             }
-                            
+
                             $option->update([
                                 'option_text' => $optionData['option_text'] ?? $option->option_text,
                                 'option_image' => $optionData['option_image'] ?? $option->option_image,
@@ -398,7 +400,8 @@ class QuestionRepository implements QuestionRepositoryInterface
                                 'order' => $optionData['order'] ?? $option->order,
                             ]);
                         }
-                    } else {
+                    }
+                    else {
                         $question->options()->create([
                             'option_text' => $optionData['option_text'] ?? null,
                             'option_image' => $optionData['option_image'] ?? null,
@@ -413,7 +416,7 @@ class QuestionRepository implements QuestionRepositoryInterface
             if (isset($data['match_pairs'])) {
                 // Delete existing pairs not in the update data
                 $existingPairIds = collect($data['match_pairs'])->pluck('id')->filter()->toArray();
-                $question->matchPairs()->whereNotIn('id', $existingPairIds)->get()->each(function($pair) {
+                $question->matchPairs()->whereNotIn('id', $existingPairIds)->get()->each(function ($pair) {
                     if ($pair->left_image) {
                         $oldPath = str_replace('storage/', '', $pair->left_image);
                         Storage::disk('public')->delete($oldPath);
@@ -464,7 +467,8 @@ class QuestionRepository implements QuestionRepositoryInterface
                                 'pair_order' => $pairData['pair_order'] ?? $pair->pair_order,
                             ]);
                         }
-                    } else {
+                    }
+                    else {
                         $question->matchPairs()->create([
                             'left_text' => $pairData['left_text'] ?? null,
                             'left_image' => $pairData['left_image'] ?? null,
@@ -484,7 +488,8 @@ class QuestionRepository implements QuestionRepositoryInterface
                 'data' => $this->getWithRelations($question->id)
             ];
 
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             DB::rollBack();
             return [
                 'status' => false,
@@ -508,7 +513,7 @@ class QuestionRepository implements QuestionRepositoryInterface
             $oldImagePath = str_replace('storage/', '', $question->question_image);
             if (Storage::disk('public')->exists($oldImagePath)) {
                 Storage::disk('public')->delete($oldImagePath);
-                // Log::info('Question image deleted: ' . $oldImagePath);
+            // Log::info('Question image deleted: ' . $oldImagePath);
             }
         }
         $question->delete();
@@ -533,16 +538,16 @@ class QuestionRepository implements QuestionRepositoryInterface
         try {
             $question = $this->model
                 ->with([
-                    'quiz',
-                    'options' => function($query) {
-                        $query->orderBy('order', 'asc');
-                    },
-                    'matchPairs' => function($query) {
-                        $query->orderBy('pair_order', 'asc');
-                    },
-                    'studentAnswers.student',  // If you have student answers relation
-                    'files'                    // If you have files relation
-                ])
+                'quiz',
+                'options' => function ($query) {
+                $query->orderBy('order', 'asc');
+            },
+                'matchPairs' => function ($query) {
+                $query->orderBy('pair_order', 'asc');
+            },
+                'studentAnswers.student', // If you have student answers relation
+                'files' // If you have files relation
+            ])
                 ->findOrFail($id);
 
             // Transform the data to include additional information
@@ -564,44 +569,44 @@ class QuestionRepository implements QuestionRepositoryInterface
 
             // Add options if present
             if ($question->type === 'choice_image' && $question->options->isNotEmpty()) {
-                $transformedData['options'] = $question->options->map(function($option) {
+                $transformedData['options'] = $question->options->map(function ($option) {
                     return [
-                        'id' => $option->id,
-                        'option_text' => $option->option_text,
-                        'option_image' => $option->option_image,
-                        'is_correct' => $option->is_correct,
-                        'order' => $option->order
+                    'id' => $option->id,
+                    'option_text' => $option->option_text,
+                    'option_image' => $option->option_image,
+                    'is_correct' => $option->is_correct,
+                    'order' => $option->order
                     ];
                 });
             }
 
             // Add match pairs if present
             if ($question->type === 'match_image' && $question->matchPairs->isNotEmpty()) {
-                $transformedData['match_pairs'] = $question->matchPairs->map(function($pair) {
+                $transformedData['match_pairs'] = $question->matchPairs->map(function ($pair) {
                     return [
-                        'id' => $pair->id,
-                        'left_text' => $pair->left_text,
-                        'left_image' => $pair->left_image,
-                        'right_text' => $pair->right_text,
-                        'right_image' => $pair->right_image,
-                        'pair_order' => $pair->pair_order
+                    'id' => $pair->id,
+                    'left_text' => $pair->left_text,
+                    'left_image' => $pair->left_image,
+                    'right_text' => $pair->right_text,
+                    'right_image' => $pair->right_image,
+                    'pair_order' => $pair->pair_order
                     ];
                 });
             }
 
             // Add student answers if present and user has permission
             if ($question->studentAnswers->isNotEmpty()) {
-                $transformedData['student_answers'] = $question->studentAnswers->map(function($answer) {
+                $transformedData['student_answers'] = $question->studentAnswers->map(function ($answer) {
                     return [
-                        'id' => $answer->id,
-                        'student' => [
-                            'id' => $answer->student->id,
-                            'name' => $answer->student->name
-                        ],
-                        'answer_text' => $answer->answer_text,
-                        'is_correct' => $answer->is_correct,
-                        'score' => $answer->score,
-                        'submitted_at' => $answer->created_at
+                    'id' => $answer->id,
+                    'student' => [
+                    'id' => $answer->student->id,
+                    'name' => $answer->student->name
+                    ],
+                    'answer_text' => $answer->answer_text,
+                    'is_correct' => $answer->is_correct,
+                    'score' => $answer->score,
+                    'submitted_at' => $answer->created_at
                     ];
                 });
             }
@@ -612,7 +617,8 @@ class QuestionRepository implements QuestionRepositoryInterface
                 'data' => $transformedData
             ];
 
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             return [
                 'status' => false,
                 'message' => 'Error retrieving question details: ' . $e->getMessage()
@@ -634,7 +640,7 @@ class QuestionRepository implements QuestionRepositoryInterface
                 $options[$index][$field] = $value;
                 continue;
             }
-            
+
             // Handle match_pairs array-like format
             if (preg_match('/^match_pairs\[(\d+)\]\[([^\]]+)\]$/', $key, $matches)) {
                 $index = $matches[1];

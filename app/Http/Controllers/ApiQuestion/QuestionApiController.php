@@ -4,7 +4,7 @@ namespace App\Http\Controllers\ApiQuestion;
 
 use App\Helper\ApiResponse;
 use App\Http\Controllers\Controller;
-use App\Repository\Interface\QuestionRepositoryInterface;
+use App\Repository\Interfaces\QuestionRepositoryInterface;
 use Illuminate\Http\Request;
 
 class QuestionApiController extends Controller

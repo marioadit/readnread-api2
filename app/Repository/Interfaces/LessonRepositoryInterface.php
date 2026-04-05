@@ -1,10 +1,11 @@
 <?php
 
-namespace App\Repository\Interface;
+namespace App\Repository\Interfaces;
 
 use Illuminate\Http\Request;
 
-interface LessonRepositoryInterface 
+interface LessonRepositoryInterface
+
 {
     public function getAll();
     public function getById($id);

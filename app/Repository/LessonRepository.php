@@ -3,7 +3,7 @@
 namespace App\Repository;
 
 use App\Models\Lesson;
-use App\Repository\Interface\LessonRepositoryInterface;
+use App\Repository\Interfaces\LessonRepositoryInterface;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\UploadedFile;
@@ -107,7 +107,7 @@ class LessonRepository implements LessonRepositoryInterface
 
                 if (Storage::disk('public')->exists($oldFilePath)) {
                     Storage::disk('public')->delete($oldFilePath);
-                    // Log::info("Old thumbnail deleted: " . $oldFilePath);
+                // Log::info("Old thumbnail deleted: " . $oldFilePath);
                 }
             }
 
@@ -117,7 +117,7 @@ class LessonRepository implements LessonRepositoryInterface
 
             $lesson->thumbnail = 'storage/' . $path;
 
-            // Log::info("New thumbnail uploaded: " . $lesson->thumbnail);
+        // Log::info("New thumbnail uploaded: " . $lesson->thumbnail);
         }
 
 
@@ -145,7 +145,7 @@ class LessonRepository implements LessonRepositoryInterface
             $oldThumbnailPath = str_replace('storage/', '', $lesson->thumbnail);
             if (Storage::disk('public')->exists($oldThumbnailPath)) {
                 Storage::disk('public')->delete($oldThumbnailPath);
-                // Log::info("Thumbnail deleted: " . $oldThumbnailPath);
+            // Log::info("Thumbnail deleted: " . $oldThumbnailPath);
             }
         }
 

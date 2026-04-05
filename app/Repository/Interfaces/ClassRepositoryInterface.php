@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Repository\Interface;
+namespace App\Repository\Interfaces;
 
-interface ClassRepositoryInterface 
+interface ClassRepositoryInterface
+
 {
     public function getAll();
     public function getById($id);

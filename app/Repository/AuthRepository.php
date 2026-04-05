@@ -3,7 +3,7 @@
 namespace App\Repository;
 
 use App\Models\User;
-use App\Repository\Interface\AuthRepositoryInterface;
+use App\Repository\Interfaces\AuthRepositoryInterface;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
@@ -21,12 +21,12 @@ class AuthRepository implements AuthRepositoryInterface
             }
 
             $user = Auth::user();
-            
+
             // Delete any existing tokens for this user
             $user->tokens()->delete();
 
             // Create new token with expiration
-            $expiresAt = now('Asia/Jakarta')->addDays(1); 
+            $expiresAt = now('Asia/Jakarta')->addDays(1);
             $token = $user->createToken('auth_token', ['*'], $expiresAt)->plainTextToken;
 
             return [
@@ -39,7 +39,8 @@ class AuthRepository implements AuthRepositoryInterface
                     'expires_at' => $expiresAt->toDateTimeString()
                 ]
             ];
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             return [
                 'status' => false,
                 'message' => 'Login gagal',

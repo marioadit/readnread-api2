@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Services;
+namespace App\Service;
 
 use App\Helper\ApiResponse;
-use App\Repository\Interface\AuthRepositoryInterface;
+use App\Repository\Interfaces\AuthRepositoryInterface;
 
 class AuthService
 {
@@ -45,7 +45,8 @@ class AuthService
 
 
     // Logout
-    public function logout($user) {
+    public function logout($user)
+    {
         $response = $this->authRepository->logout($user);
         if ($response['status']) {
             return ApiResponse::success([], $response['message']);

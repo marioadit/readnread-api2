@@ -4,14 +4,14 @@ namespace App\Providers;
 
 use App\Repository\AuthRepository;
 use App\Repository\ClassRepository;
-use App\Repository\Interface\AuthRepositoryInterface;
-use App\Repository\Interface\ClassRepositoryInterface;
-use App\Repository\Interface\LessonRepositoryInterface;
-use App\Repository\Interface\QuestionRepositoryInterface;
-use App\Repository\Interface\QuizRepositoryInterface;
-use App\Repository\Interface\UserRepositoryInterface;
-use App\Repository\Interface\OptionRepositoryInterface;
-use App\Repository\Interface\IUserAnswerRepository;
+use App\Repository\Interfaces\AuthRepositoryInterface;
+use App\Repository\Interfaces\ClassRepositoryInterface;
+use App\Repository\Interfaces\LessonRepositoryInterface;
+use App\Repository\Interfaces\QuestionRepositoryInterface;
+use App\Repository\Interfaces\QuizRepositoryInterface;
+use App\Repository\Interfaces\UserRepositoryInterface;
+use App\Repository\Interfaces\OptionRepositoryInterface;
+use App\Repository\Interfaces\IUserAnswerRepository;
 use App\Repository\LessonRepository;
 use App\Repository\QuestionRepository;
 use App\Repository\QuizRepository;
@@ -27,14 +27,14 @@ class RepositoryServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
-        $this->app->bind(AuthRepositoryInterface::class, AuthRepository::class);
-        $this->app->bind(ClassRepositoryInterface::class, ClassRepository::class);
-        $this->app->bind(LessonRepositoryInterface::class, LessonRepository::class);
-        $this->app->bind(QuizRepositoryInterface::class, QuizRepository::class);
-        $this->app->bind(QuestionRepositoryInterface::class, QuestionRepository::class);
-        $this->app->bind(OptionRepositoryInterface::class, OptionRepository::class);
-        $this->app->bind(IUserAnswerRepository::class, UserAnswerRepository::class);
+        $this->app->bind(UserRepositoryInterface::class , UserRepository::class);
+        $this->app->bind(AuthRepositoryInterface::class , AuthRepository::class);
+        $this->app->bind(ClassRepositoryInterface::class , ClassRepository::class);
+        $this->app->bind(LessonRepositoryInterface::class , LessonRepository::class);
+        $this->app->bind(QuizRepositoryInterface::class , QuizRepository::class);
+        $this->app->bind(QuestionRepositoryInterface::class , QuestionRepository::class);
+        $this->app->bind(OptionRepositoryInterface::class , OptionRepository::class);
+        $this->app->bind(IUserAnswerRepository::class , UserAnswerRepository::class);
     }
 
     /**
@@ -42,6 +42,6 @@ class RepositoryServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+    //
     }
 }

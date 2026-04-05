@@ -4,10 +4,11 @@ namespace App\Repository;
 
 use App\Models\Classes;
 use App\Models\User;
-use App\Repository\Interface\ClassRepositoryInterface;
+use App\Repository\Interfaces\ClassRepositoryInterface;
 use Illuminate\Support\Facades\Validator;
 
-class ClassRepository implements ClassRepositoryInterface 
+class ClassRepository implements ClassRepositoryInterface
+
 {
     protected $model;
 
@@ -43,7 +44,7 @@ class ClassRepository implements ClassRepositoryInterface
         }
 
         $class = $this->model->create($data);
-        
+
         return [
             'status' => true,
             'message' => 'Kelas berhasil dibuat',
@@ -61,7 +62,7 @@ class ClassRepository implements ClassRepositoryInterface
 
         if ($validator->fails()) {
             return [
-                'status' => false, 
+                'status' => false,
                 'message' => 'Validasi gagal',
                 'errors' => $validator->errors()
             ];
@@ -69,7 +70,7 @@ class ClassRepository implements ClassRepositoryInterface
 
         $class = $this->model->findOrFail($id);
         $class->update($data);
-        
+
         return [
             'status' => true,
             'message' => 'Kelas berhasil diperbarui',
@@ -81,7 +82,7 @@ class ClassRepository implements ClassRepositoryInterface
     {
         $class = $this->model->findOrFail($id);
         $class->delete();
-        
+
         return [
             'status' => true,
             'message' => 'Kelas berhasil dihapus'
@@ -103,7 +104,7 @@ class ClassRepository implements ClassRepositoryInterface
     {
         $class = $this->model->findOrFail($classId);
         $student = User::where('role', 'siswa')->findOrFail($studentId);
-        
+
         // Cek apakah siswa sudah ada di kelas
         if ($class->students()->where('users.id', $studentId)->exists()) {
             return [
@@ -111,9 +112,9 @@ class ClassRepository implements ClassRepositoryInterface
                 'message' => 'Siswa sudah terdaftar dalam kelas ini'
             ];
         }
-        
+
         $class->students()->attach($studentId);
-        
+
         return [
             'status' => true,
             'message' => 'Siswa berhasil ditambahkan ke kelas'
@@ -124,7 +125,7 @@ class ClassRepository implements ClassRepositoryInterface
     {
         $class = $this->model->findOrFail($classId);
         $class->students()->detach($studentId);
-        
+
         return [
             'status' => true,
             'message' => 'Siswa berhasil dihapus dari kelas'

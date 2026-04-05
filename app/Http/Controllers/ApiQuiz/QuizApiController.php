@@ -4,7 +4,7 @@ namespace App\Http\Controllers\ApiQuiz;
 
 use App\Helper\ApiResponse;
 use App\Http\Controllers\Controller;
-use App\Repository\Interface\QuizRepositoryInterface;
+use App\Repository\Interfaces\QuizRepositoryInterface;
 use Illuminate\Http\Request;
 
 class QuizApiController extends Controller

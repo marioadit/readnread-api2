@@ -2,7 +2,7 @@
 
 namespace App\Repository;
 
-use App\Repository\Interface\OptionRepositoryInterface;
+use App\Repository\Interfaces\OptionRepositoryInterface;
 use App\Models\Option;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\UploadedFile;
@@ -104,14 +104,14 @@ class OptionRepository implements OptionRepositoryInterface
                 $oldImagePath = str_replace('storage/', '', $oldImagePath);
                 if (Storage::disk('public')->exists($oldImagePath)) {
                     Storage::disk('public')->delete($oldImagePath);
-                    // Log::info('Old option image deleted: ' . $oldImagePath);
+                // Log::info('Old option image deleted: ' . $oldImagePath);
                 }
             }
             $file = $data['option_image'];
             $filename = 'option_image_' . time() . '.' . $file->getClientOriginalExtension();
             $path = $file->storeAs('optionsImage', $filename, 'public');
             $option->option_image = 'storage/' . $path;
-            // Log::info('New option image stored: ' . $option->option_image);
+        // Log::info('New option image stored: ' . $option->option_image);
         }
 
         $option->save();
@@ -136,7 +136,7 @@ class OptionRepository implements OptionRepositoryInterface
             $oldImagePath = str_replace('storage/', '', $option->option_image);
             if (Storage::disk('public')->exists($oldImagePath)) {
                 Storage::disk('public')->delete($oldImagePath);
-                // Log::info('Option image deleted: ' . $oldImagePath);
+            // Log::info('Option image deleted: ' . $oldImagePath);
             }
         }
         return [

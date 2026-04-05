@@ -4,7 +4,7 @@ namespace App\Http\Controllers\ApiOption;
 
 use App\Helper\ApiResponse;
 use App\Http\Controllers\Controller;
-use App\Repository\Interface\OptionRepositoryInterface;
+use App\Repository\Interfaces\OptionRepositoryInterface;
 use Illuminate\Http\Request;
 
 class OptionApiController extends Controller

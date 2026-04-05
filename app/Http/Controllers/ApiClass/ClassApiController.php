@@ -4,7 +4,7 @@ namespace App\Http\Controllers\ApiClass;
 
 use App\Helper\ApiResponse;
 use App\Http\Controllers\Controller;
-use App\Repository\Interface\ClassRepositoryInterface;
+use App\Repository\Interfaces\ClassRepositoryInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 

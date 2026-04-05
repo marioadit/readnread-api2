@@ -1,9 +1,10 @@
 <?php
 
-namespace App\Repository\Interface;
+namespace App\Repository\Interfaces;
 
 
-interface AuthRepositoryInterface {
+interface AuthRepositoryInterface
+{
     public function login(array $data);
 
     public function register(array $data);

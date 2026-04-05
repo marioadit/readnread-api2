@@ -4,7 +4,7 @@ namespace App\Http\Controllers\ApiLesson;
 
 use App\Helper\ApiResponse;
 use App\Http\Controllers\Controller;
-use App\Repository\Interface\LessonRepositoryInterface;
+use App\Repository\Interfaces\LessonRepositoryInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 

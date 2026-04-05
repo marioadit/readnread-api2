@@ -2,7 +2,7 @@
 
 namespace App\Repository;
 
-use App\Repository\Interface\QuizRepositoryInterface;
+use App\Repository\Interfaces\QuizRepositoryInterface;
 use App\Models\Quiz;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -114,16 +114,16 @@ class QuizRepository implements QuizRepositoryInterface
         try {
             $quiz = $this->model
                 ->with([
-                    'questions.studentAnswers' => function ($query) use ($studentId) {
-                        $query->where('student_id', $studentId)
-                            ->orderBy('created_at', 'desc');
-                    }
-                ])
+                'questions.studentAnswers' => function ($query) use ($studentId) {
+                $query->where('student_id', $studentId)
+                    ->orderBy('created_at', 'desc');
+            }
+            ])
                 ->with([
-                    'questions' => function ($query) {
-                        $query->orderBy('order');
-                    }
-                ])
+                'questions' => function ($query) {
+                $query->orderBy('order');
+            }
+            ])
                 ->with('questions.options')
                 ->findOrFail($quizId);
 
@@ -165,8 +165,8 @@ class QuizRepository implements QuizRepositoryInterface
                     'percentage_score' => round($percentageScore, 2),
                     'completion_rate' => round($completionRate, 2),
                     'questions' => $quiz->questions->map(function ($question) {
-                        $latestAnswer = $question->studentAnswers->first();
-                        return [
+                $latestAnswer = $question->studentAnswers->first();
+                return [
                             'question_id' => $question->id,
                             'question_text' => $question->question_text,
                             'question_type' => $question->type,
@@ -180,10 +180,11 @@ class QuizRepository implements QuizRepositoryInterface
                                 'submitted_at' => $latestAnswer->submitted_at
                             ] : null
                         ];
-                    })->values()->all()
+            })->values()->all()
                 ]
             ];
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             return [
                 'status' => false,
                 'message' => 'Error retrieving quiz results: ' . $e->getMessage()
@@ -197,25 +198,25 @@ class QuizRepository implements QuizRepositoryInterface
             // Get all quizzes that have answers from this student
             $quizzes = $this->model
                 ->whereHas('questions.studentAnswers', function ($query) use ($studentId) {
-                    $query->where('student_id', $studentId);
-                })
+                $query->where('student_id', $studentId);
+            })
                 ->with([
-                    'questions.studentAnswers' => function ($query) use ($studentId) {
-                        $query->where('student_id', $studentId);
-                    },
-                    'questions.options',
-                    'lesson'
-                ])
+                'questions.studentAnswers' => function ($query) use ($studentId) {
+                $query->where('student_id', $studentId);
+            },
+                'questions.options',
+                'lesson'
+            ])
                 ->with([
-                    'questions.studentAnswers.student' => function ($query) use ($studentId) {
-                        $query->where('id', $studentId);
-                    },
-                    'questions.options',
-                    'lesson.class.students' => function ($query) use ($studentId) {
-                        $query->where('student_id', $studentId);
-                    },
-                    'lesson'
-                ])
+                'questions.studentAnswers.student' => function ($query) use ($studentId) {
+                $query->where('id', $studentId);
+            },
+                'questions.options',
+                'lesson.class.students' => function ($query) use ($studentId) {
+                $query->where('student_id', $studentId);
+            },
+                'lesson'
+            ])
                 ->get();
 
             $results = $quizzes->map(function ($quiz) {
@@ -244,27 +245,27 @@ class QuizRepository implements QuizRepositoryInterface
                 $student = $quiz->questions->first()->studentAnswers->first()->student ?? null;
 
                 return [
-                    'quiz_id' => $quiz->id,
-                    'quiz_title' => $quiz->title,
-                    'lesson' => [
-                        'id' => $quiz->lesson->id,
-                        'title' => $quiz->lesson->title
-                    ],
-                    'class' => [
-                        'id' => $quiz->lesson->class->id,
-                        'name' => $quiz->lesson->class->name
-                    ],
-                    'student' => $student,
-                    'total_questions' => count($quiz->questions),
-                    'answered_questions' => $answeredQuestions,
-                    'correct_answers' => $correctAnswers,
-                    'total_score' => $totalScore,
-                    'max_possible_score' => $maxPossibleScore,
-                    'percentage_score' => round($percentageScore, 2),
-                    'completion_rate' => round($completionRate, 2),
-                    'start_time' => $quiz->start_time,
-                    'end_time' => $quiz->end_time,
-                    'submitted_at' => $quiz->questions->first()->studentAnswers->sortByDesc('created_at')->first()->submitted_at ?? null
+                'quiz_id' => $quiz->id,
+                'quiz_title' => $quiz->title,
+                'lesson' => [
+                'id' => $quiz->lesson->id,
+                'title' => $quiz->lesson->title
+                ],
+                'class' => [
+                'id' => $quiz->lesson->class->id,
+                'name' => $quiz->lesson->class->name
+                ],
+                'student' => $student,
+                'total_questions' => count($quiz->questions),
+                'answered_questions' => $answeredQuestions,
+                'correct_answers' => $correctAnswers,
+                'total_score' => $totalScore,
+                'max_possible_score' => $maxPossibleScore,
+                'percentage_score' => round($percentageScore, 2),
+                'completion_rate' => round($completionRate, 2),
+                'start_time' => $quiz->start_time,
+                'end_time' => $quiz->end_time,
+                'submitted_at' => $quiz->questions->first()->studentAnswers->sortByDesc('created_at')->first()->submitted_at ?? null
                 ];
             });
 
@@ -273,7 +274,8 @@ class QuizRepository implements QuizRepositoryInterface
                 'message' => 'User quiz results retrieved successfully',
                 'data' => $results
             ];
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             return [
                 'status' => false,
                 'message' => 'Error retrieving user quiz results: ' . $e->getMessage()

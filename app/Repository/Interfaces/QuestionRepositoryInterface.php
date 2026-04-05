@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Repository\Interface;
+namespace App\Repository\Interfaces;
 
 use Illuminate\Http\Request;
 
@@ -17,9 +17,9 @@ interface QuestionRepositoryInterface
     public function getDetailQuestion($id);
     public function getAllStudentAnswers();
     public function getStudentAnswers($id);
-    // public function getQuestionsByQuiz($questionId);
-    // public function getQuestionsByMatchPair($questionId);
-    // public function getQuestionsByOptions($questionId);
-    // public function getQuestionsByStudentAnswer($questionId);
-    // public function getWithQuizAndOptions($questionId);
+// public function getQuestionsByQuiz($questionId);
+// public function getQuestionsByMatchPair($questionId);
+// public function getQuestionsByOptions($questionId);
+// public function getQuestionsByStudentAnswer($questionId);
+// public function getWithQuizAndOptions($questionId);
 }
