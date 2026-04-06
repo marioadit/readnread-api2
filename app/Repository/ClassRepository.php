@@ -32,7 +32,9 @@ class ClassRepository implements ClassRepositoryInterface
         $validator = Validator::make($data, [
             'name' => 'required|string|max:255',
             'level' => 'required|in:kelas 1,kelas 2,kelas 3,kelas 4,kelas 5,kelas 6',
-            'teacher_id' => 'required|exists:users,id'
+            'teacher_id' => 'required|exists:users,id',
+            'semester' => 'required|in:gasal,genap',
+            'academic_year' => 'required|string|max:9'
         ]);
 
         if ($validator->fails()) {
@@ -57,7 +59,9 @@ class ClassRepository implements ClassRepositoryInterface
         $validator = Validator::make($data, [
             'name' => 'sometimes|string|max:255',
             'level' => 'sometimes|in:kelas 1,kelas 2,kelas 3,kelas 4,kelas 5,kelas 6',
-            'teacher_id' => 'sometimes|exists:users,id'
+            'teacher_id' => 'sometimes|exists:users,id',
+            'semester' => 'sometimes|in:gasal,genap',
+            'academic_year' => 'sometimes|string|max:9'
         ]);
 
         if ($validator->fails()) {

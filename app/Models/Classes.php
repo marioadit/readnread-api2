@@ -13,6 +13,8 @@ class Classes extends Model
         'name',
         'level',
         'teacher_id',
+        'semester',
+        'academic_year',
     ];
 
     /**
@@ -20,7 +22,7 @@ class Classes extends Model
      */
     public function teacher()
     {
-        return $this->belongsTo(User::class, 'teacher_id');
+        return $this->belongsTo(User::class , 'teacher_id');
     }
 
     /**
@@ -28,7 +30,7 @@ class Classes extends Model
      */
     public function students()
     {
-        return $this->belongsToMany(User::class, 'class_students', 'class_id', 'student_id');
+        return $this->belongsToMany(User::class , 'class_students', 'class_id', 'student_id');
     }
 
     /**
@@ -36,6 +38,6 @@ class Classes extends Model
      */
     public function lessons()
     {
-        return $this->hasMany(Lesson::class, 'class_id');
+        return $this->hasMany(Lesson::class , 'class_id');
     }
 }
