@@ -43,6 +43,14 @@ class Question extends Model
     }
 
     /**
+     * Relasi ke essay answer (khusus untuk tipe essay dan guess image)
+     */
+    public function essayAnswers()
+    {
+        return $this->hasMany(EssayAnswer::class);
+    }
+
+    /**
      * Relasi ke jawaban siswa
      */
     public function studentAnswers()

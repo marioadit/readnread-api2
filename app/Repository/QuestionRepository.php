@@ -60,7 +60,7 @@ class QuestionRepository implements QuestionRepositoryInterface
             'order' => 'nullable|integer|min:0',
             'score' => 'nullable|integer|min:0',
             'options' => 'required_if:type,choice_image|array',
-            'options.*.option_text' => 'nullable|string',
+            'option_text' => 'required_if:type,essay|required_if:type,guess_image|string',
             'options.*.option_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'options.*.is_correct' => 'required_if:type,choice_image|boolean',
             'options.*.order' => 'nullable|integer|min:0',
@@ -149,6 +149,13 @@ class QuestionRepository implements QuestionRepositoryInterface
                 }
             }
 
+            // Handle Essay and guess Image
+            if (in_array($data['type'], ['essay', 'guess_image']) && isset($data['option_text'])) {
+                $question->essayAnswers()->create([
+                    'option_text' => $data['option_text'],
+                ]);
+            }
+
             DB::commit();
 
             return [
@@ -157,8 +164,7 @@ class QuestionRepository implements QuestionRepositoryInterface
                 'data' => $this->getWithRelations($question->id)
             ];
 
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             DB::rollBack();
             return [
                 'status' => false,
@@ -178,7 +184,7 @@ class QuestionRepository implements QuestionRepositoryInterface
             'questions.*.order' => 'nullable|integer|min:0',
             'questions.*.score' => 'nullable|integer|min:0',
             'questions.*.options' => 'required_if:questions.*.type,choice_image|array',
-            'questions.*.options.*.option_text' => 'nullable|string',
+            'questions.*.option_text' => 'required_if:questions.*.type,essay|required_if:questions.*.type,guess_image|string',
             'questions.*.options.*.option_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'questions.*.options.*.is_correct' => 'required_if:questions.*.type,choice_image|boolean',
             'questions.*.options.*.order' => 'nullable|integer|min:0',
@@ -270,8 +276,16 @@ class QuestionRepository implements QuestionRepositoryInterface
                     }
                 }
 
+                // Handle Essay and guess Image
+                if (in_array($questionData['type'], ['essay', 'guess_image']) && isset($questionData['option_text'])) {
+                    $question->essayAnswers()->create([
+                        'option_text' => $questionData['option_text'],
+                    ]);
+                }
+
                 $createdQuestions[] = $this->getWithRelations($question->id);
             }
+
 
             DB::commit();
 
@@ -281,8 +295,7 @@ class QuestionRepository implements QuestionRepositoryInterface
                 'data' => $createdQuestions
             ];
 
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             DB::rollBack();
             return [
                 'status' => false,
@@ -400,8 +413,7 @@ class QuestionRepository implements QuestionRepositoryInterface
                                 'order' => $optionData['order'] ?? $option->order,
                             ]);
                         }
-                    }
-                    else {
+                    } else {
                         $question->options()->create([
                             'option_text' => $optionData['option_text'] ?? null,
                             'option_image' => $optionData['option_image'] ?? null,
@@ -467,8 +479,7 @@ class QuestionRepository implements QuestionRepositoryInterface
                                 'pair_order' => $pairData['pair_order'] ?? $pair->pair_order,
                             ]);
                         }
-                    }
-                    else {
+                    } else {
                         $question->matchPairs()->create([
                             'left_text' => $pairData['left_text'] ?? null,
                             'left_image' => $pairData['left_image'] ?? null,
@@ -488,8 +499,7 @@ class QuestionRepository implements QuestionRepositoryInterface
                 'data' => $this->getWithRelations($question->id)
             ];
 
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             DB::rollBack();
             return [
                 'status' => false,
@@ -513,7 +523,7 @@ class QuestionRepository implements QuestionRepositoryInterface
             $oldImagePath = str_replace('storage/', '', $question->question_image);
             if (Storage::disk('public')->exists($oldImagePath)) {
                 Storage::disk('public')->delete($oldImagePath);
-            // Log::info('Question image deleted: ' . $oldImagePath);
+                // Log::info('Question image deleted: ' . $oldImagePath);
             }
         }
         $question->delete();
@@ -538,16 +548,16 @@ class QuestionRepository implements QuestionRepositoryInterface
         try {
             $question = $this->model
                 ->with([
-                'quiz',
-                'options' => function ($query) {
-                $query->orderBy('order', 'asc');
-            },
-                'matchPairs' => function ($query) {
-                $query->orderBy('pair_order', 'asc');
-            },
-                'studentAnswers.student', // If you have student answers relation
-                'files' // If you have files relation
-            ])
+                    'quiz',
+                    'options' => function ($query) {
+                        $query->orderBy('order', 'asc');
+                    },
+                    'matchPairs' => function ($query) {
+                        $query->orderBy('pair_order', 'asc');
+                    },
+                    'studentAnswers.student', // If you have student answers relation
+                    'files' // If you have files relation
+                ])
                 ->findOrFail($id);
 
             // Transform the data to include additional information
@@ -571,11 +581,11 @@ class QuestionRepository implements QuestionRepositoryInterface
             if ($question->type === 'choice_image' && $question->options->isNotEmpty()) {
                 $transformedData['options'] = $question->options->map(function ($option) {
                     return [
-                    'id' => $option->id,
-                    'option_text' => $option->option_text,
-                    'option_image' => $option->option_image,
-                    'is_correct' => $option->is_correct,
-                    'order' => $option->order
+                        'id' => $option->id,
+                        'option_text' => $option->option_text,
+                        'option_image' => $option->option_image,
+                        'is_correct' => $option->is_correct,
+                        'order' => $option->order
                     ];
                 });
             }
@@ -584,12 +594,12 @@ class QuestionRepository implements QuestionRepositoryInterface
             if ($question->type === 'match_image' && $question->matchPairs->isNotEmpty()) {
                 $transformedData['match_pairs'] = $question->matchPairs->map(function ($pair) {
                     return [
-                    'id' => $pair->id,
-                    'left_text' => $pair->left_text,
-                    'left_image' => $pair->left_image,
-                    'right_text' => $pair->right_text,
-                    'right_image' => $pair->right_image,
-                    'pair_order' => $pair->pair_order
+                        'id' => $pair->id,
+                        'left_text' => $pair->left_text,
+                        'left_image' => $pair->left_image,
+                        'right_text' => $pair->right_text,
+                        'right_image' => $pair->right_image,
+                        'pair_order' => $pair->pair_order
                     ];
                 });
             }
@@ -598,15 +608,15 @@ class QuestionRepository implements QuestionRepositoryInterface
             if ($question->studentAnswers->isNotEmpty()) {
                 $transformedData['student_answers'] = $question->studentAnswers->map(function ($answer) {
                     return [
-                    'id' => $answer->id,
-                    'student' => [
-                    'id' => $answer->student->id,
-                    'name' => $answer->student->name
-                    ],
-                    'answer_text' => $answer->answer_text,
-                    'is_correct' => $answer->is_correct,
-                    'score' => $answer->score,
-                    'submitted_at' => $answer->created_at
+                        'id' => $answer->id,
+                        'student' => [
+                            'id' => $answer->student->id,
+                            'name' => $answer->student->name
+                        ],
+                        'answer_text' => $answer->answer_text,
+                        'is_correct' => $answer->is_correct,
+                        'score' => $answer->score,
+                        'submitted_at' => $answer->created_at
                     ];
                 });
             }
@@ -617,8 +627,7 @@ class QuestionRepository implements QuestionRepositoryInterface
                 'data' => $transformedData
             ];
 
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             return [
                 'status' => false,
                 'message' => 'Error retrieving question details: ' . $e->getMessage()
