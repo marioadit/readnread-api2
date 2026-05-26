@@ -56,7 +56,7 @@ class QuestionRepository implements QuestionRepositoryInterface
             'quiz_id' => 'required|exists:quizzes,id',
             'type' => 'required|string|in:essay,choice_image,guess_image,match_image',
             'question_text' => 'nullable|string',
-            'question_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'question_image' => 'required_if:type,guess_image|nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'order' => 'nullable|integer|min:0',
             'score' => 'nullable|integer|min:0',
             'options' => 'required_if:type,choice_image|array',
@@ -180,11 +180,11 @@ class QuestionRepository implements QuestionRepositoryInterface
             'questions.*.quiz_id' => 'required|exists:quizzes,id',
             'questions.*.type' => 'required|string|in:essay,choice_image,guess_image,match_image',
             'questions.*.question_text' => 'nullable|string',
-            'questions.*.question_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'questions.*.question_image' => 'required_if:questions.*.type,guess_image|nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'questions.*.order' => 'nullable|integer|min:0',
             'questions.*.score' => 'nullable|integer|min:0',
             'questions.*.options' => 'required_if:questions.*.type,choice_image|array',
-            'questions.*.option_text' => 'required_if:questions.*.type,essay|required_if:questions.*.type,guess_image|string',
+            'questions.*.option_text' => 'required_if:questions.*.type,essay|required_if:questions.*.type,choice_image|required_if:questions.*.type,match_image|required_if:questions.*.type,guess_image|required|string',
             'questions.*.options.*.option_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'questions.*.options.*.is_correct' => 'required_if:questions.*.type,choice_image|boolean',
             'questions.*.options.*.order' => 'nullable|integer|min:0',
@@ -489,6 +489,14 @@ class QuestionRepository implements QuestionRepositoryInterface
                         ]);
                     }
                 }
+            }
+
+            // Handle Essay and guess Image
+            if (in_array($data['type'], ['essay', 'guess_image']) && isset($data['option_text'])) {
+                $question->options()->updateOrCreate(
+                    ['question_id' => $question->id, 'is_correct' => true],
+                    ['option_text' => $data['option_text']]
+                );
             }
 
             DB::commit();
