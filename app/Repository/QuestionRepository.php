@@ -152,7 +152,7 @@ class QuestionRepository implements QuestionRepositoryInterface
             // Handle Essay and guess Image
             if (in_array($data['type'], ['essay', 'guess_image']) && isset($data['option_text'])) {
                 $question->essayAnswers()->create([
-                    'option_text' => $data['option_text'],
+                    'option_text' => strtolower($data['option_text']),
                 ]);
             }
 
@@ -279,7 +279,7 @@ class QuestionRepository implements QuestionRepositoryInterface
                 // Handle Essay and guess Image
                 if (in_array($questionData['type'], ['essay', 'guess_image']) && isset($questionData['option_text'])) {
                     $question->essayAnswers()->create([
-                        'option_text' => $questionData['option_text'],
+                        'option_text' => strtolower($questionData['option_text']),
                     ]);
                 }
 
@@ -495,7 +495,7 @@ class QuestionRepository implements QuestionRepositoryInterface
             if (in_array($data['type'], ['essay', 'guess_image']) && isset($data['option_text'])) {
                 $question->options()->updateOrCreate(
                     ['question_id' => $question->id, 'is_correct' => true],
-                    ['option_text' => $data['option_text']]
+                    ['option_text' => strtolower($data['option_text'])]
                 );
             }
 
