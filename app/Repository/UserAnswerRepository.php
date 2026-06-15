@@ -43,7 +43,7 @@ class UserAnswerRepository implements IUserAnswerRepository
                 return $answer['question_id'];
             }, $answers);
 
-            $questions = Question::with(['options', 'matchPairs'])
+            $questions = Question::with(['options', 'matchPairs', 'essayAnswers'])
                 ->whereIn('id', $questionIds)
                 ->get()
                 ->keyBy('id');
@@ -59,8 +59,19 @@ class UserAnswerRepository implements IUserAnswerRepository
 
                 switch ($question->type) {
                     case 'essay':
-                        $score = 0;
-                        $is_correct = false;
+                    case 'guess_image':
+                        // Get the correct answer from essay_answers table
+                        $correctAnswer = $question->essayAnswers->first();
+                        if ($correctAnswer && $answer['answer_text']) {
+                            $studentAnswerText = $this->normalizeAnswerText($answer['answer_text']);
+                            $correctAnswerText = $this->normalizeAnswerText($correctAnswer->option_text);
+
+                            if ($studentAnswerText === $correctAnswerText) {
+                                $score = $question->score;
+                                $question_score = $score;
+                                $is_correct = true;
+                            }
+                        }
                         break;
 
                     case 'choice_image':
@@ -166,7 +177,7 @@ class UserAnswerRepository implements IUserAnswerRepository
                 return $answer['question_id'];
             }, $answers);
 
-            $questions = Question::with(['options', 'matchPairs'])
+            $questions = Question::with(['options', 'matchPairs', 'essayAnswers'])
                 ->whereIn('id', $questionIds)
                 ->get()
                 ->keyBy('id');
@@ -179,8 +190,19 @@ class UserAnswerRepository implements IUserAnswerRepository
 
                 switch ($question->type) {
                     case 'essay':
-                        $score = 0;
-                        $is_correct = false;
+                    case 'guess_image':
+                        // Get the correct answer from essay_answers table
+                        $correctAnswer = $question->essayAnswers->first();
+                        if ($correctAnswer && $answer['answer_text']) {
+                            $studentAnswerText = $this->normalizeAnswerText($answer['answer_text']);
+                            $correctAnswerText = $this->normalizeAnswerText($correctAnswer->option_text);
+
+                            if ($studentAnswerText === $correctAnswerText) {
+                                $score = $question->score;
+                                $question_score = $score;
+                                $is_correct = true;
+                            }
+                        }
                         break;
 
                     case 'choice_image':
@@ -307,5 +329,23 @@ class UserAnswerRepository implements IUserAnswerRepository
                 'message' => 'Error menghapus jawaban: ' . $e->getMessage()
             ];
         }
+    }
+
+    /**
+     * Normalize answer text for comparison:
+     * - Trim whitespace
+     * - Convert to lowercase
+     * - Remove all punctuation (keep letters, numbers, and whitespace)
+     * - Collapse multiple spaces into one
+     */
+    private function normalizeAnswerText(string $text): string
+    {
+        $text = trim($text);
+        $text = strtolower($text);
+        // Remove all punctuation/special chars except letters, numbers, and whitespace
+        $text = preg_replace('/[^\p{L}\p{N}\s]/u', '', $text);
+        // Collapse multiple spaces into one
+        $text = preg_replace('/\s+/', ' ', $text);
+        return $text;
     }
 }
