@@ -75,21 +75,22 @@ class UserAnswerRepository implements IUserAnswerRepository
                         break;
 
                     case 'choice_image':
-                        if ($answer['answer_option_id']) {
+                        if ($answer['answer_option_id'] ?? null) {
                             // Get the selected option
                             $selectedOption = $question->options->firstWhere('id', $answer['answer_option_id']);
-                            $answer['answer_image'] = $selectedOption->option_image;
-                            Log::info($answer);
-                            if ($selectedOption && $selectedOption->is_correct) {
-                                $score = $question->score;
-                                $question_score = $score;
-                                $is_correct = true;
+                            if ($selectedOption) {
+                                $answer['answer_image'] = $selectedOption->option_image;
+                                if ($selectedOption->is_correct) {
+                                    $score = $question->score;
+                                    $question_score = $score;
+                                    $is_correct = true;
+                                }
                             }
                         }
                         break;
 
                     case 'match_image':
-                        if ($answer['answer_text']) {
+                        if ($answer['answer_text'] ?? null) {
                             // Parse the matching pairs from answer_text
                             $userPairs = json_decode($answer['answer_text'], true);
                             if ($userPairs) {
@@ -130,10 +131,10 @@ class UserAnswerRepository implements IUserAnswerRepository
                 $studentAnswer = $this->studentAnswer->create([
                     'student_id' => $answer['student_id'],
                     'question_id' => $answer['question_id'],
-                    'answer_text' => $answer['answer_text'],
-                    'answer_option_id' => $answer['answer_option_id'],
-                    'answer_image' => $answer['answer_image'],
-                    'submitted_at' => $answer['submitted_at'],
+                    'answer_text' => $answer['answer_text'] ?? null,
+                    'answer_option_id' => $answer['answer_option_id'] ?? null,
+                    'answer_image' => $answer['answer_image'] ?? null,
+                    'submitted_at' => $answer['submitted_at'] ?? now(),
                     'is_correct' => $is_correct,
                     'score' => $score,
                     'feedback' => null
@@ -206,20 +207,22 @@ class UserAnswerRepository implements IUserAnswerRepository
                         break;
 
                     case 'choice_image':
-                        if ($answer['answer_option_id']) {
+                        if ($answer['answer_option_id'] ?? null) {
                             // Get the selected option
                             $selectedOption = $question->options->firstWhere('id', $answer['answer_option_id']);
-                            $answer['answer_image'] = $selectedOption->option_image;
-                            if ($selectedOption && $selectedOption->is_correct) {
-                                $score = $question->score;
-                                $question_score = $score;
-                                $is_correct = true;
+                            if ($selectedOption) {
+                                $answer['answer_image'] = $selectedOption->option_image;
+                                if ($selectedOption->is_correct) {
+                                    $score = $question->score;
+                                    $question_score = $score;
+                                    $is_correct = true;
+                                }
                             }
                         }
                         break;
 
                     case 'match_image':
-                        if ($answer['answer_text']) {
+                        if ($answer['answer_text'] ?? null) {
                             // Parse the matching pairs from answer_text
                             $userPairs = json_decode($answer['answer_text'], true);
                             if ($userPairs) {
@@ -264,10 +267,10 @@ class UserAnswerRepository implements IUserAnswerRepository
                     $studentAnswer->update([
                         'student_id' => $answer['student_id'],
                         'question_id' => $answer['question_id'],
-                        'answer_text' => $answer['answer_text'],
-                        'answer_option_id' => $answer['answer_option_id'],
-                        'answer_image' => $answer['answer_image'],
-                        'submitted_at' => $answer['submitted_at'],
+                        'answer_text' => $answer['answer_text'] ?? null,
+                        'answer_option_id' => $answer['answer_option_id'] ?? null,
+                        'answer_image' => $answer['answer_image'] ?? null,
+                        'submitted_at' => $answer['submitted_at'] ?? now(),
                         'is_correct' => $is_correct,
                         'score' => $score,
                         'feedback' => $answer['feedback'] ?? null
