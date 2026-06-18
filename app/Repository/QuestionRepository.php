@@ -22,17 +22,17 @@ class QuestionRepository implements QuestionRepositoryInterface
 
     public function getAll()
     {
-        return $this->model->with(['quiz', 'options', 'matchPairs'])->get();
+        return $this->model->with(['quiz', 'options', 'matchPairs', 'essayAnswers'])->get();
     }
 
     public function getById($id)
     {
-        return $this->model->with(['quiz', 'options', 'matchPairs'])->findOrFail($id);
+        return $this->model->with(['quiz', 'options', 'matchPairs', 'essayAnswers'])->findOrFail($id);
     }
 
     public function getWithRelations($id)
     {
-        return $this->model->with(['quiz', 'options', 'matchPairs'])->findOrFail($id);
+        return $this->model->with(['quiz', 'options', 'matchPairs', 'essayAnswers'])->findOrFail($id);
     }
 
     public function getStudentAnswers($id)
