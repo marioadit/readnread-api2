@@ -149,11 +149,16 @@ class QuestionRepository implements QuestionRepositoryInterface
                 }
             }
 
-            // Handle Essay and guess Image
+            // Handle Essay and guess Image (support multiple answers separated by |)
             if (in_array($data['type'], ['essay', 'guess_image']) && isset($data['option_text'])) {
-                $question->essayAnswers()->create([
-                    'option_text' => strtolower($data['option_text']),
-                ]);
+                $answers = array_map('trim', explode('|', $data['option_text']));
+                foreach ($answers as $answerText) {
+                    if ($answerText !== '') {
+                        $question->essayAnswers()->create([
+                            'option_text' => strtolower($answerText),
+                        ]);
+                    }
+                }
             }
 
             DB::commit();
@@ -276,11 +281,16 @@ class QuestionRepository implements QuestionRepositoryInterface
                     }
                 }
 
-                // Handle Essay and guess Image
+                // Handle Essay and guess Image (support multiple answers separated by |)
                 if (in_array($questionData['type'], ['essay', 'guess_image']) && isset($questionData['option_text'])) {
-                    $question->essayAnswers()->create([
-                        'option_text' => strtolower($questionData['option_text']),
-                    ]);
+                    $answers = array_map('trim', explode('|', $questionData['option_text']));
+                    foreach ($answers as $answerText) {
+                        if ($answerText !== '') {
+                            $question->essayAnswers()->create([
+                                'option_text' => strtolower($answerText),
+                            ]);
+                        }
+                    }
                 }
 
                 $createdQuestions[] = $this->getWithRelations($question->id);
@@ -491,12 +501,18 @@ class QuestionRepository implements QuestionRepositoryInterface
                 }
             }
 
-            // Handle Essay and guess Image
+            // Handle Essay and guess Image (support multiple answers separated by |)
             if (in_array($data['type'], ['essay', 'guess_image']) && isset($data['option_text'])) {
-                $question->options()->updateOrCreate(
-                    ['question_id' => $question->id, 'is_correct' => true],
-                    ['option_text' => strtolower($data['option_text'])]
-                );
+                // Delete all existing essay answers then re-insert
+                $question->essayAnswers()->delete();
+                $answers = array_map('trim', explode('|', $data['option_text']));
+                foreach ($answers as $answerText) {
+                    if ($answerText !== '') {
+                        $question->essayAnswers()->create([
+                            'option_text' => strtolower($answerText),
+                        ]);
+                    }
+                }
             }
 
             DB::commit();

@@ -60,16 +60,18 @@ class UserAnswerRepository implements IUserAnswerRepository
                 switch ($question->type) {
                     case 'essay':
                     case 'guess_image':
-                        // Get the correct answer from essay_answers table
-                        $correctAnswer = $question->essayAnswers->first();
-                        if ($correctAnswer && $answer['answer_text']) {
+                        // Get all correct answers from essay_answers table (supports multiple answers separated by |)
+                        $correctAnswers = $question->essayAnswers;
+                        if ($correctAnswers->isNotEmpty() && $answer['answer_text']) {
                             $studentAnswerText = $this->normalizeAnswerText($answer['answer_text']);
-                            $correctAnswerText = $this->normalizeAnswerText($correctAnswer->option_text);
-
-                            if ($studentAnswerText === $correctAnswerText) {
-                                $score = $question->score;
-                                $question_score = $score;
-                                $is_correct = true;
+                            foreach ($correctAnswers as $correctAnswer) {
+                                $correctAnswerText = $this->normalizeAnswerText($correctAnswer->option_text);
+                                if ($studentAnswerText === $correctAnswerText) {
+                                    $score = $question->score;
+                                    $question_score = $score;
+                                    $is_correct = true;
+                                    break;
+                                }
                             }
                         }
                         break;
@@ -192,16 +194,18 @@ class UserAnswerRepository implements IUserAnswerRepository
                 switch ($question->type) {
                     case 'essay':
                     case 'guess_image':
-                        // Get the correct answer from essay_answers table
-                        $correctAnswer = $question->essayAnswers->first();
-                        if ($correctAnswer && $answer['answer_text']) {
+                        // Get all correct answers from essay_answers table (supports multiple answers separated by |)
+                        $correctAnswers = $question->essayAnswers;
+                        if ($correctAnswers->isNotEmpty() && $answer['answer_text']) {
                             $studentAnswerText = $this->normalizeAnswerText($answer['answer_text']);
-                            $correctAnswerText = $this->normalizeAnswerText($correctAnswer->option_text);
-
-                            if ($studentAnswerText === $correctAnswerText) {
-                                $score = $question->score;
-                                $question_score = $score;
-                                $is_correct = true;
+                            foreach ($correctAnswers as $correctAnswer) {
+                                $correctAnswerText = $this->normalizeAnswerText($correctAnswer->option_text);
+                                if ($studentAnswerText === $correctAnswerText) {
+                                    $score = $question->score;
+                                    $question_score = $score;
+                                    $is_correct = true;
+                                    break;
+                                }
                             }
                         }
                         break;
