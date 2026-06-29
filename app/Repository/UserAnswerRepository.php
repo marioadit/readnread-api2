@@ -86,16 +86,14 @@ class UserAnswerRepository implements IUserAnswerRepository
                                     'correct_answers' => $correctAnswers->pluck('option_text')->toArray(),
                                 ]);
                                 $rawCorrectAnswers = $correctAnswers->pluck('option_text')->toArray();
-                                $aiResult = $this->aiGrading->gradeAnswer(
+                                $is_correct = $this->aiGrading->gradeAnswer(
                                     $answer['answer_text'],
                                     $rawCorrectAnswers,
                                     $question->question_text ?? '',
                                     $question->type
                                 );
-                                $is_correct = $aiResult['is_correct'];
                                 if ($is_correct) {
-                                    // Use score_factor for scoring (1.0 = full score)
-                                    $score          = (int) round($question->score * $aiResult['score_factor']);
+                                    $score          = $question->score;
                                     $question_score = $score;
                                 }
                             }
@@ -243,15 +241,14 @@ class UserAnswerRepository implements IUserAnswerRepository
                                     'correct_answers' => $correctAnswers->pluck('option_text')->toArray(),
                                 ]);
                                 $rawCorrectAnswers = $correctAnswers->pluck('option_text')->toArray();
-                                $aiResult = $this->aiGrading->gradeAnswer(
+                                $is_correct = $this->aiGrading->gradeAnswer(
                                     $answer['answer_text'],
                                     $rawCorrectAnswers,
                                     $question->question_text ?? '',
                                     $question->type
                                 );
-                                $is_correct = $aiResult['is_correct'];
                                 if ($is_correct) {
-                                    $score          = (int) round($question->score * $aiResult['score_factor']);
+                                    $score          = $question->score;
                                     $question_score = $score;
                                 }
                             }
