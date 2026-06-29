@@ -6,6 +6,7 @@ use App\Models\Option;
 use App\Models\Question;
 use App\Models\StudentAnswer;
 use App\Repository\Interfaces\IUserAnswerRepository;
+use App\Service\AIGradingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -13,10 +14,12 @@ use Illuminate\Support\Facades\Log;
 class UserAnswerRepository implements IUserAnswerRepository
 {
     protected $studentAnswer;
+    protected AIGradingService $aiGrading;
 
-    public function __construct(StudentAnswer $studentAnswer)
+    public function __construct(StudentAnswer $studentAnswer, AIGradingService $aiGrading)
     {
         $this->studentAnswer = $studentAnswer;
+        $this->aiGrading     = $aiGrading;
     }
 
     public function getAll()
@@ -63,14 +66,37 @@ class UserAnswerRepository implements IUserAnswerRepository
                         // Get all correct answers from essay_answers table (supports multiple answers separated by |)
                         $correctAnswers = $question->essayAnswers;
                         if ($correctAnswers->isNotEmpty() && $answer['answer_text']) {
-                            $studentAnswerText = $this->normalizeAnswerText($answer['answer_text']);
-                            foreach ($correctAnswers as $correctAnswer) {
-                                $correctAnswerText = $this->normalizeAnswerText($correctAnswer->option_text);
-                                if ($studentAnswerText === $correctAnswerText) {
-                                    $score = $question->score;
+                            $studentAnswerText  = $this->normalizeAnswerText($answer['answer_text']);
+                            $correctAnswerTexts = $correctAnswers->pluck('option_text')->map(
+                                fn($t) => $this->normalizeAnswerText($t)
+                            )->toArray();
+
+                            // Step 1: Exact match (fast, no API cost)
+                            if (in_array($studentAnswerText, $correctAnswerTexts)) {
+                                Log::info('AIGradingService: exact match ditemukan', [
+                                    'student_answer' => $answer['answer_text'],
+                                ]);
+                                $score          = $question->score;
+                                $question_score = $score;
+                                $is_correct     = true;
+                            } else {
+                                // Step 2: AI semantic grading as fallback
+                                Log::info('AIGradingService: exact match gagal, memanggil AI grading', [
+                                    'student_answer'  => $answer['answer_text'],
+                                    'correct_answers' => $correctAnswers->pluck('option_text')->toArray(),
+                                ]);
+                                $rawCorrectAnswers = $correctAnswers->pluck('option_text')->toArray();
+                                $aiResult = $this->aiGrading->gradeAnswer(
+                                    $answer['answer_text'],
+                                    $rawCorrectAnswers,
+                                    $question->question_text ?? '',
+                                    $question->type
+                                );
+                                $is_correct = $aiResult['is_correct'];
+                                if ($is_correct) {
+                                    // Use score_factor for scoring (1.0 = full score)
+                                    $score          = (int) round($question->score * $aiResult['score_factor']);
                                     $question_score = $score;
-                                    $is_correct = true;
-                                    break;
                                 }
                             }
                         }
@@ -197,14 +223,36 @@ class UserAnswerRepository implements IUserAnswerRepository
                         // Get all correct answers from essay_answers table (supports multiple answers separated by |)
                         $correctAnswers = $question->essayAnswers;
                         if ($correctAnswers->isNotEmpty() && $answer['answer_text']) {
-                            $studentAnswerText = $this->normalizeAnswerText($answer['answer_text']);
-                            foreach ($correctAnswers as $correctAnswer) {
-                                $correctAnswerText = $this->normalizeAnswerText($correctAnswer->option_text);
-                                if ($studentAnswerText === $correctAnswerText) {
-                                    $score = $question->score;
+                            $studentAnswerText  = $this->normalizeAnswerText($answer['answer_text']);
+                            $correctAnswerTexts = $correctAnswers->pluck('option_text')->map(
+                                fn($t) => $this->normalizeAnswerText($t)
+                            )->toArray();
+
+                            // Step 1: Exact match (fast, no API cost)
+                            if (in_array($studentAnswerText, $correctAnswerTexts)) {
+                                Log::info('AIGradingService: exact match ditemukan', [
+                                    'student_answer' => $answer['answer_text'],
+                                ]);
+                                $score          = $question->score;
+                                $question_score = $score;
+                                $is_correct     = true;
+                            } else {
+                                // Step 2: AI semantic grading as fallback
+                                Log::info('AIGradingService: exact match gagal, memanggil AI grading', [
+                                    'student_answer'  => $answer['answer_text'],
+                                    'correct_answers' => $correctAnswers->pluck('option_text')->toArray(),
+                                ]);
+                                $rawCorrectAnswers = $correctAnswers->pluck('option_text')->toArray();
+                                $aiResult = $this->aiGrading->gradeAnswer(
+                                    $answer['answer_text'],
+                                    $rawCorrectAnswers,
+                                    $question->question_text ?? '',
+                                    $question->type
+                                );
+                                $is_correct = $aiResult['is_correct'];
+                                if ($is_correct) {
+                                    $score          = (int) round($question->score * $aiResult['score_factor']);
                                     $question_score = $score;
-                                    $is_correct = true;
-                                    break;
                                 }
                             }
                         }
