@@ -17,29 +17,32 @@ class AIGradingService
     }
 
     /**
-     * Check if the student's answer is semantically correct
-     * compared to the list of correct answers.
+     * Grade the student's answer semantically and return a score ratio (0.0 – 1.0).
      *
-     * Returns true if the answer is considered correct, false otherwise.
-     * Falls back to false (not graded as correct) on API failure.
+     * - 1.0  → jawaban sepenuhnya benar
+     * - 0.5  → jawaban relevan / mendekati benar (partial credit)
+     * - 0.0  → jawaban salah / tidak relevan
+     *
+     * Falls back to 0.0 (no credit) on API failure.
      *
      * @param string $studentAnswer  The raw answer submitted by the student
      * @param array  $correctAnswers Array of correct answer strings from essay_answers table
      * @param string $questionText   The question text for context
      * @param string $questionType   'essay' or 'guess_image'
+     * @return float Score ratio between 0.0 and 1.0
      */
     public function gradeAnswer(
         string $studentAnswer,
         array $correctAnswers,
         string $questionText = '',
         string $questionType = 'essay'
-    ): bool {
+    ): float {
         if (empty($this->apiKey) || $this->apiKey === 'your-gemini-api-key-here') {
             Log::warning('AIGradingService: GEMINI_API_KEY belum dikonfigurasi, AI grading dilewati.', [
                 'student_answer'  => $studentAnswer,
                 'correct_answers' => $correctAnswers,
             ]);
-            return false;
+            return 0.0;
         }
 
         Log::info('AIGradingService: memulai penilaian AI', [
@@ -59,7 +62,14 @@ Pertimbangkan hal berikut:
 - Spasi berlebih tidak berpengaruh
 - Jawaban tidak harus kata per kata sama, asalkan maknanya benar
 
-Jawab HANYA dengan satu kata: "BENAR" atau "SALAH"
+Berikan skor dalam skala 0 sampai 100:
+- 100  = Jawaban sepenuhnya benar atau sangat mendekati kunci jawaban
+- 50   = Jawaban relevan / mendekati benar tapi tidak tepat (misal: sinonim, ejaan sangat mirip, makna hampir sama)
+- 0    = Jawaban salah atau tidak relevan sama sekali
+
+Boleh menggunakan nilai antara 0, 50, dan 100 untuk kasus di antaranya (misal 70, 30, dsb.).
+
+Jawab HANYA dengan angka saja (contoh: 100, 50, 0, 70). Jangan tambahkan kata atau karakter lain.
 SHARED;
 
         // Build context-aware prompt
@@ -97,7 +107,7 @@ PROMPT;
                         ]
                     ],
                     'generationConfig' => [
-                        'temperature' => 0.1,
+                        'temperature'     => 0.1,
                         'maxOutputTokens' => 10,
                     ],
                 ]
@@ -106,29 +116,37 @@ PROMPT;
             if ($response->failed()) {
                 Log::error('AIGradingService: Gemini API request failed', [
                     'status' => $response->status(),
-                    'body' => $response->body(),
+                    'body'   => $response->body(),
                 ]);
-                return false;
+                return 0.0;
             }
 
-            $json = $response->json();
+            $json    = $response->json();
             $rawText = $json['candidates'][0]['content']['parts'][0]['text'] ?? '';
-            $result = strtoupper(trim($rawText));
+            $cleaned = trim(preg_replace('/[^0-9]/', '', $rawText)); // strip non-numeric chars
+            $score   = is_numeric($cleaned) ? (int) $cleaned : 0;
 
-            Log::info('AIGradingService: hasil penilaian AI', [
+            // Clamp to 0–100
+            $score = max(0, min(100, $score));
+
+            // Convert to ratio 0.0–1.0
+            $ratio = $score / 100.0;
+
+            Log::info('AIGradingService: hasil penilaian AI (partial scoring)', [
                 'student_answer'  => $studentAnswer,
                 'correct_answers' => $correctAnswers,
-                'ai_raw_result'   => $result,
-                'is_correct'      => str_contains($result, 'BENAR'),
+                'ai_raw_result'   => $rawText,
+                'ai_score_0_100'  => $score,
+                'score_ratio'     => $ratio,
             ]);
 
-            return str_contains($result, 'BENAR');
+            return $ratio;
 
         } catch (\Exception $e) {
             Log::error('AIGradingService: Exception during API call', [
                 'message' => $e->getMessage(),
             ]);
-            return false;
+            return 0.0;
         }
     }
 }

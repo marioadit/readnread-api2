@@ -80,21 +80,23 @@ class UserAnswerRepository implements IUserAnswerRepository
                                 $question_score = $score;
                                 $is_correct     = true;
                             } else {
-                                // Step 2: AI semantic grading as fallback
+                                // Step 2: AI semantic grading as fallback (returns 0.0–1.0 ratio)
                                 Log::info('AIGradingService: exact match gagal, memanggil AI grading', [
                                     'student_answer'  => $answer['answer_text'],
                                     'correct_answers' => $correctAnswers->pluck('option_text')->toArray(),
                                 ]);
                                 $rawCorrectAnswers = $correctAnswers->pluck('option_text')->toArray();
-                                $is_correct = $this->aiGrading->gradeAnswer(
+                                $aiRatio = $this->aiGrading->gradeAnswer(
                                     $answer['answer_text'],
                                     $rawCorrectAnswers,
                                     $question->question_text ?? '',
                                     $question->type
                                 );
-                                if ($is_correct) {
-                                    $score          = $question->score;
+                                if ($aiRatio > 0) {
+                                    // Partial credit: actual score = ratio * full question score
+                                    $score          = round($aiRatio * $question->score, 2);
                                     $question_score = $score;
+                                    $is_correct     = ($aiRatio >= 1.0);
                                 }
                             }
                         }
@@ -235,21 +237,23 @@ class UserAnswerRepository implements IUserAnswerRepository
                                 $question_score = $score;
                                 $is_correct     = true;
                             } else {
-                                // Step 2: AI semantic grading as fallback
+                                // Step 2: AI semantic grading as fallback (returns 0.0–1.0 ratio)
                                 Log::info('AIGradingService: exact match gagal, memanggil AI grading', [
                                     'student_answer'  => $answer['answer_text'],
                                     'correct_answers' => $correctAnswers->pluck('option_text')->toArray(),
                                 ]);
                                 $rawCorrectAnswers = $correctAnswers->pluck('option_text')->toArray();
-                                $is_correct = $this->aiGrading->gradeAnswer(
+                                $aiRatio = $this->aiGrading->gradeAnswer(
                                     $answer['answer_text'],
                                     $rawCorrectAnswers,
                                     $question->question_text ?? '',
                                     $question->type
                                 );
-                                if ($is_correct) {
-                                    $score          = $question->score;
+                                if ($aiRatio > 0) {
+                                    // Partial credit: actual score = ratio * full question score
+                                    $score          = round($aiRatio * $question->score, 2);
                                     $question_score = $score;
+                                    $is_correct     = ($aiRatio >= 1.0);
                                 }
                             }
                         }
