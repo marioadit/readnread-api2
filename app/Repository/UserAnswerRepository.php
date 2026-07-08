@@ -19,7 +19,7 @@ class UserAnswerRepository implements IUserAnswerRepository
     public function __construct(StudentAnswer $studentAnswer, AIGradingService $aiGrading)
     {
         $this->studentAnswer = $studentAnswer;
-        $this->aiGrading     = $aiGrading;
+        $this->aiGrading = $aiGrading;
     }
 
     public function getAll()
@@ -66,7 +66,7 @@ class UserAnswerRepository implements IUserAnswerRepository
                         // Get all correct answers from essay_answers table (supports multiple answers separated by |)
                         $correctAnswers = $question->essayAnswers;
                         if ($correctAnswers->isNotEmpty() && $answer['answer_text']) {
-                            $studentAnswerText  = $this->normalizeAnswerText($answer['answer_text']);
+                            $studentAnswerText = $this->normalizeAnswerText($answer['answer_text']);
                             $correctAnswerTexts = $correctAnswers->pluck('option_text')->map(
                                 fn($t) => $this->normalizeAnswerText($t)
                             )->toArray();
@@ -76,13 +76,13 @@ class UserAnswerRepository implements IUserAnswerRepository
                                 Log::info('AIGradingService: exact match ditemukan', [
                                     'student_answer' => $answer['answer_text'],
                                 ]);
-                                $score          = $question->score;
+                                $score = $question->score;
                                 $question_score = $score;
-                                $is_correct     = true;
+                                $is_correct = true;
                             } else {
                                 // Step 2: AI semantic grading as fallback (returns 0.0–1.0 ratio)
                                 Log::info('AIGradingService: exact match gagal, memanggil AI grading', [
-                                    'student_answer'  => $answer['answer_text'],
+                                    'student_answer' => $answer['answer_text'],
                                     'correct_answers' => $correctAnswers->pluck('option_text')->toArray(),
                                 ]);
                                 $rawCorrectAnswers = $correctAnswers->pluck('option_text')->toArray();
@@ -95,17 +95,18 @@ class UserAnswerRepository implements IUserAnswerRepository
 
                                 if ($aiRatio >= 1.0) {
                                     // Inti / makna jawaban SAMA → full score
-                                    $score          = $question->score;
+                                    $score = $question->score;
                                     $question_score = $score;
-                                    $is_correct     = true;
+                                    $is_correct = true;
                                 } elseif ($aiRatio > 0) {
                                     // Jawaban relevan sebagian → partial score
-                                    $score          = round($aiRatio * $question->score, 2);
+                                    $score = round($aiRatio * $question->score, 2);
                                     $question_score = $score;
-                                    $is_correct     = false;
+                                    $is_correct = false;
                                 }
                                 // else aiRatio == 0 → tidak dapat poin (default)
                             }
+
                         }
                         break;
 
@@ -132,8 +133,8 @@ class UserAnswerRepository implements IUserAnswerRepository
                                 // Get correct pairs from question
                                 $correctPairs = $question->matchPairs->map(function ($pair) {
                                     return [
-                                    'left_id' => $pair->id,
-                                    'right_id' => $pair->id
+                                        'left_id' => $pair->id,
+                                        'right_id' => $pair->id
                                     ];
                                 })->toArray();
 
@@ -142,8 +143,8 @@ class UserAnswerRepository implements IUserAnswerRepository
                                 foreach ($userPairs as $userPair) {
                                     foreach ($correctPairs as $correctPair) {
                                         if (
-                                        $userPair['left_id'] == $correctPair['left_id'] &&
-                                        $userPair['right_id'] == $correctPair['right_id']
+                                            $userPair['left_id'] == $correctPair['left_id'] &&
+                                            $userPair['right_id'] == $correctPair['right_id']
                                         ) {
                                             $correctCount++;
                                             break;
@@ -186,8 +187,7 @@ class UserAnswerRepository implements IUserAnswerRepository
                 'answers' => $results,
                 'total_quiz_score' => $total_quiz_score
             ];
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error storing answers: ' . $e->getMessage());
             return [
@@ -230,7 +230,7 @@ class UserAnswerRepository implements IUserAnswerRepository
                         // Get all correct answers from essay_answers table (supports multiple answers separated by |)
                         $correctAnswers = $question->essayAnswers;
                         if ($correctAnswers->isNotEmpty() && $answer['answer_text']) {
-                            $studentAnswerText  = $this->normalizeAnswerText($answer['answer_text']);
+                            $studentAnswerText = $this->normalizeAnswerText($answer['answer_text']);
                             $correctAnswerTexts = $correctAnswers->pluck('option_text')->map(
                                 fn($t) => $this->normalizeAnswerText($t)
                             )->toArray();
@@ -240,13 +240,13 @@ class UserAnswerRepository implements IUserAnswerRepository
                                 Log::info('AIGradingService: exact match ditemukan', [
                                     'student_answer' => $answer['answer_text'],
                                 ]);
-                                $score          = $question->score;
+                                $score = $question->score;
                                 $question_score = $score;
-                                $is_correct     = true;
+                                $is_correct = true;
                             } else {
                                 // Step 2: AI semantic grading as fallback (returns 0.0–1.0 ratio)
                                 Log::info('AIGradingService: exact match gagal, memanggil AI grading', [
-                                    'student_answer'  => $answer['answer_text'],
+                                    'student_answer' => $answer['answer_text'],
                                     'correct_answers' => $correctAnswers->pluck('option_text')->toArray(),
                                 ]);
                                 $rawCorrectAnswers = $correctAnswers->pluck('option_text')->toArray();
@@ -259,17 +259,18 @@ class UserAnswerRepository implements IUserAnswerRepository
 
                                 if ($aiRatio >= 1.0) {
                                     // Inti / makna jawaban SAMA → full score
-                                    $score          = $question->score;
+                                    $score = $question->score;
                                     $question_score = $score;
-                                    $is_correct     = true;
+                                    $is_correct = true;
                                 } elseif ($aiRatio > 0) {
                                     // Jawaban relevan sebagian → partial score
-                                    $score          = round($aiRatio * $question->score, 2);
+                                    $score = round($aiRatio * $question->score, 2);
                                     $question_score = $score;
-                                    $is_correct     = false;
+                                    $is_correct = false;
                                 }
                                 // else aiRatio == 0 → tidak dapat poin (default)
                             }
+
                         }
                         break;
 
@@ -296,8 +297,8 @@ class UserAnswerRepository implements IUserAnswerRepository
                                 // Get correct pairs from question
                                 $correctPairs = $question->matchPairs->map(function ($pair) {
                                     return [
-                                    'left_id' => $pair->id,
-                                    'right_id' => $pair->id
+                                        'left_id' => $pair->id,
+                                        'right_id' => $pair->id
                                     ];
                                 })->toArray();
 
@@ -306,8 +307,8 @@ class UserAnswerRepository implements IUserAnswerRepository
                                 foreach ($userPairs as $userPair) {
                                     foreach ($correctPairs as $correctPair) {
                                         if (
-                                        $userPair['left_id'] == $correctPair['left_id'] &&
-                                        $userPair['right_id'] == $correctPair['right_id']
+                                            $userPair['left_id'] == $correctPair['left_id'] &&
+                                            $userPair['right_id'] == $correctPair['right_id']
                                         ) {
                                             $correctCount++;
                                             break;
@@ -353,8 +354,7 @@ class UserAnswerRepository implements IUserAnswerRepository
                 'answers' => $results,
                 'total_quiz_score' => $total_quiz_score
             ];
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error updating student answer: ' . $e->getMessage());
             return [
@@ -391,8 +391,7 @@ class UserAnswerRepository implements IUserAnswerRepository
                 'message' => "{$deletedCount} jawaban siswa berhasil dihapus",
                 'deleted_count' => $deletedCount
             ];
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Error menghapus jawaban: ' . $e->getMessage());
             return [
                 'status' => false,
