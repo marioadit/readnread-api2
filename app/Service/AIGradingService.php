@@ -58,18 +58,19 @@ class AIGradingService
 Pertimbangkan hal berikut:
 - Toleransi ejaan mirip / salah satu huruf (contoh: "tuju" = "tujuh", "kuceng" = "kucing")
 - Angka digit dan tulisannya dianggap sama (contoh: "67" = "enam puluh tujuh" = "enam puluh tuju")
-- Huruf kapital tidak berpengaruh
-- Spasi berlebih tidak berpengaruh
-- Jawaban tidak harus kata per kata sama, asalkan maknanya benar
+- Huruf kapital dan spasi berlebih tidak berpengaruh
+- Jawaban tidak harus kata per kata sama, yang dinilai adalah INTI / MAKNA dari jawaban
 
 Berikan skor dalam skala 0 sampai 100:
-- 100  = Jawaban sepenuhnya benar atau sangat mendekati kunci jawaban
-- 50   = Jawaban relevan / mendekati benar tapi tidak tepat (misal: sinonim, ejaan sangat mirip, makna hampir sama)
-- 0    = Jawaban salah atau tidak relevan sama sekali
+- 100  = Inti / makna jawaban SAMA dengan kunci jawaban, meskipun menggunakan kata berbeda, sinonim, atau ejaan sedikit berbeda
+         (contoh: kunci="kucing", jawaban="kuceng" → 100 | kunci="berlari", jawaban="lari" → 100)
+- 50   = Jawaban ada hubungannya / mendekati kunci tapi inti makna tidak sepenuhnya tepat
+         (contoh: kunci="kucing", jawaban="hewan berbulu" → 50)
+- 0    = Jawaban salah atau tidak ada hubungannya sama sekali dengan kunci jawaban
 
-Boleh menggunakan nilai antara 0, 50, dan 100 untuk kasus di antaranya (misal 70, 30, dsb.).
+Boleh menggunakan nilai di antara (misal 70, 30) jika dirasa perlu.
 
-Jawab HANYA dengan angka saja (contoh: 100, 50, 0, 70). Jangan tambahkan kata atau karakter lain.
+Jawab HANYA dengan angka saja (contoh: 100, 50, 0). Jangan tambahkan kata atau karakter lain.
 SHARED;
 
         // Build context-aware prompt

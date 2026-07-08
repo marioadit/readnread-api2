@@ -92,12 +92,19 @@ class UserAnswerRepository implements IUserAnswerRepository
                                     $question->question_text ?? '',
                                     $question->type
                                 );
-                                if ($aiRatio > 0) {
-                                    // Partial credit: actual score = ratio * full question score
+
+                                if ($aiRatio >= 1.0) {
+                                    // Inti / makna jawaban SAMA → full score
+                                    $score          = $question->score;
+                                    $question_score = $score;
+                                    $is_correct     = true;
+                                } elseif ($aiRatio > 0) {
+                                    // Jawaban relevan sebagian → partial score
                                     $score          = round($aiRatio * $question->score, 2);
                                     $question_score = $score;
-                                    $is_correct     = ($aiRatio >= 1.0);
+                                    $is_correct     = false;
                                 }
+                                // else aiRatio == 0 → tidak dapat poin (default)
                             }
                         }
                         break;
@@ -249,12 +256,19 @@ class UserAnswerRepository implements IUserAnswerRepository
                                     $question->question_text ?? '',
                                     $question->type
                                 );
-                                if ($aiRatio > 0) {
-                                    // Partial credit: actual score = ratio * full question score
+
+                                if ($aiRatio >= 1.0) {
+                                    // Inti / makna jawaban SAMA → full score
+                                    $score          = $question->score;
+                                    $question_score = $score;
+                                    $is_correct     = true;
+                                } elseif ($aiRatio > 0) {
+                                    // Jawaban relevan sebagian → partial score
                                     $score          = round($aiRatio * $question->score, 2);
                                     $question_score = $score;
-                                    $is_correct     = ($aiRatio >= 1.0);
+                                    $is_correct     = false;
                                 }
+                                // else aiRatio == 0 → tidak dapat poin (default)
                             }
                         }
                         break;
