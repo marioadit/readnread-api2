@@ -9,6 +9,8 @@ class AnswersHistory extends Model
 {
     use HasFactory;
 
+    protected $table = 'answers_history';
+
     protected $fillable = [
         'student_id',
         'class_id',

@@ -4,22 +4,21 @@ namespace App\Http\Controllers\ApiAnswer;
 
 use App\Helper\ApiResponse;
 use App\Http\Controllers\Controller;
-use App\Repository\Interfaces\IUserAnswerRepository;
+use App\Service\StudentAnswerService;
 use Illuminate\Http\Request;
 
 class StudentAnswerApiController extends Controller
 {
-    protected $userAnswerRepository;
+    protected StudentAnswerService $studentAnswerService;
 
-    public function __construct(IUserAnswerRepository $userAnswerRepository)
+    public function __construct(StudentAnswerService $studentAnswerService)
     {
-        $this->userAnswerRepository = $userAnswerRepository;
+        $this->studentAnswerService = $studentAnswerService;
     }
-
 
     public function index()
     {
-        $userAnswers = $this->userAnswerRepository->getAll();
+        $userAnswers = $this->studentAnswerService->getAll();
 
         if ($userAnswers->isEmpty()) {
             return ApiResponse::error('User answers not found', 404);
@@ -30,7 +29,7 @@ class StudentAnswerApiController extends Controller
 
     public function show($id)
     {
-        $userAnswer = $this->userAnswerRepository->getById($id);
+        $userAnswer = $this->studentAnswerService->getById($id);
 
         if (!$userAnswer) {
             return ApiResponse::error('User answer not found', 404);
@@ -41,29 +40,29 @@ class StudentAnswerApiController extends Controller
 
     public function store(Request $request)
     {
-        $userAnswer = $this->userAnswerRepository->store($request);
+        $result = $this->studentAnswerService->store($request);
 
-        if (!$userAnswer) {
-            return ApiResponse::error('User answer not created', 422, $userAnswer['errors'] ?? null);
+        if (isset($result['status']) && $result['status'] === false) {
+            return ApiResponse::error($result['message'] ?? 'User answer not created', 422);
         }
 
-        return ApiResponse::success($userAnswer, 'User answer created successfully');
+        return ApiResponse::success($result, 'User answer created successfully');
     }
 
     public function update(Request $request)
     {
-        $userAnswer = $this->userAnswerRepository->update($request);
+        $result = $this->studentAnswerService->update($request);
 
-        if (!$userAnswer) {
-            return ApiResponse::error('User answer not updated', 400);
+        if (isset($result['status']) && $result['status'] === false) {
+            return ApiResponse::error($result['message'] ?? 'User answer not updated', 400);
         }
 
-        return ApiResponse::success($userAnswer, 'User answer updated successfully');
+        return ApiResponse::success($result, 'User answer updated successfully');
     }
 
     public function destroy(Request $request)
     {
-        $deleted = $this->userAnswerRepository->destroy($request);
+        $deleted = $this->studentAnswerService->delete($request);
 
         if (!$deleted) {
             return ApiResponse::error('User answer not found', 404);

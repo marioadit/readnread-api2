@@ -8,8 +8,8 @@ use App\Models\StudentAnswer;
 use App\Repository\Interfaces\IUserAnswerRepository;
 use App\Service\AIGradingService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+
 
 class UserAnswerRepository implements IUserAnswerRepository
 {
@@ -32,336 +32,283 @@ class UserAnswerRepository implements IUserAnswerRepository
         return $this->studentAnswer->with(['student', 'question', 'selectedOption'])->find($id);
     }
 
-    public function store(Request $request)
+    public function store(Request $request): array
     {
-        try {
-            DB::beginTransaction();
+        $data    = $request->all();
+        $answers = $data['answers'];
 
-            $data = $request->all();
-            $quiz_id = $data['quiz_id'];
-            $answers = $data['answers'];
+        // Ambil semua questions sekaligus (hindari N+1)
+        $questionIds = array_map(fn($a) => $a['question_id'], $answers);
+        $questions   = Question::with(['options', 'matchPairs', 'essayAnswers'])
+            ->whereIn('id', $questionIds)
+            ->get()
+            ->keyBy('id');
 
-            // Get all questions for this quiz
-            $questionIds = array_map(function ($answer) {
-                return $answer['question_id'];
-            }, $answers);
+        $results          = [];
+        $total_quiz_score = 0;
 
-            $questions = Question::with(['options', 'matchPairs', 'essayAnswers'])
-                ->whereIn('id', $questionIds)
-                ->get()
-                ->keyBy('id');
+        foreach ($answers as $answer) {
+            $question       = $questions[$answer['question_id']];
+            $score          = 0;
+            $is_correct     = false;
+            $question_score = 0;
 
-            $results = [];
-            $total_quiz_score = 0;
+            switch ($question->type) {
+                case 'essay':
+                case 'guess_image':
+                    // Get all correct answers from essay_answers table (supports multiple answers separated by |)
+                    $correctAnswers = $question->essayAnswers;
+                    if ($correctAnswers->isNotEmpty() && $answer['answer_text']) {
+                        $studentAnswerText = $this->normalizeAnswerText($answer['answer_text']);
+                        $correctAnswerTexts = $correctAnswers->pluck('option_text')->map(
+                            fn($t) => $this->normalizeAnswerText($t)
+                        )->toArray();
 
-            foreach ($answers as $answer) {
-                $question = $questions[$answer['question_id']];
-                $score = 0;
-                $is_correct = false;
-                $question_score = 0;
+                        // Step 1: Exact match (fast, no API cost)
+                        if (in_array($studentAnswerText, $correctAnswerTexts)) {
+                            Log::info('AIGradingService: exact match ditemukan', [
+                                'student_answer' => $answer['answer_text'],
+                            ]);
+                            $score          = $question->score;
+                            $question_score = $score;
+                            $is_correct     = true;
+                        } else {
+                            // Step 2: AI semantic grading as fallback (returns 0.0–1.0 ratio)
+                            Log::info('AIGradingService: exact match gagal, memanggil AI grading', [
+                                'student_answer'  => $answer['answer_text'],
+                                'correct_answers' => $correctAnswers->pluck('option_text')->toArray(),
+                            ]);
+                            $rawCorrectAnswers = $correctAnswers->pluck('option_text')->toArray();
+                            $aiRatio = $this->aiGrading->gradeAnswer(
+                                $answer['answer_text'],
+                                $rawCorrectAnswers,
+                                $question->question_text ?? '',
+                                $question->type
+                            );
 
-                switch ($question->type) {
-                    case 'essay':
-                    case 'guess_image':
-                        // Get all correct answers from essay_answers table (supports multiple answers separated by |)
-                        $correctAnswers = $question->essayAnswers;
-                        if ($correctAnswers->isNotEmpty() && $answer['answer_text']) {
-                            $studentAnswerText = $this->normalizeAnswerText($answer['answer_text']);
-                            $correctAnswerTexts = $correctAnswers->pluck('option_text')->map(
-                                fn($t) => $this->normalizeAnswerText($t)
-                            )->toArray();
-
-                            // Step 1: Exact match (fast, no API cost)
-                            if (in_array($studentAnswerText, $correctAnswerTexts)) {
-                                Log::info('AIGradingService: exact match ditemukan', [
-                                    'student_answer' => $answer['answer_text'],
-                                ]);
-                                $score = $question->score;
+                            if ($aiRatio >= 1.0) {
+                                // Inti / makna jawaban SAMA → full score
+                                $score          = $question->score;
                                 $question_score = $score;
-                                $is_correct = true;
-                            } else {
-                                // Step 2: AI semantic grading as fallback (returns 0.0–1.0 ratio)
-                                Log::info('AIGradingService: exact match gagal, memanggil AI grading', [
-                                    'student_answer' => $answer['answer_text'],
-                                    'correct_answers' => $correctAnswers->pluck('option_text')->toArray(),
-                                ]);
-                                $rawCorrectAnswers = $correctAnswers->pluck('option_text')->toArray();
-                                $aiRatio = $this->aiGrading->gradeAnswer(
-                                    $answer['answer_text'],
-                                    $rawCorrectAnswers,
-                                    $question->question_text ?? '',
-                                    $question->type
-                                );
-
-                                if ($aiRatio >= 1.0) {
-                                    // Inti / makna jawaban SAMA → full score
-                                    $score = $question->score;
-                                    $question_score = $score;
-                                    $is_correct = true;
-                                } elseif ($aiRatio > 0) {
-                                    // Jawaban relevan sebagian → partial score
-                                    $score = round($aiRatio * $question->score, 2);
-                                    $question_score = $score;
-                                    $is_correct = false;
-                                }
-                                // else aiRatio == 0 → tidak dapat poin (default)
+                                $is_correct     = true;
+                            } elseif ($aiRatio > 0) {
+                                // Jawaban relevan sebagian → partial score
+                                $score          = round($aiRatio * $question->score, 2);
+                                $question_score = $score;
+                                $is_correct     = false;
                             }
-
+                            // else aiRatio == 0 → tidak dapat poin (default)
                         }
-                        break;
+                    }
+                    break;
 
-                    case 'choice_image':
-                        if ($answer['answer_option_id'] ?? null) {
-                            // Get the selected option
-                            $selectedOption = $question->options->firstWhere('id', $answer['answer_option_id']);
-                            if ($selectedOption) {
-                                $answer['answer_image'] = $selectedOption->option_image;
-                                if ($selectedOption->is_correct) {
-                                    $score = $question->score;
-                                    $question_score = $score;
-                                    $is_correct = true;
-                                }
+                case 'choice_image':
+                    if ($answer['answer_option_id'] ?? null) {
+                        $selectedOption = $question->options->firstWhere('id', $answer['answer_option_id']);
+                        if ($selectedOption) {
+                            $answer['answer_image'] = $selectedOption->option_image;
+                            if ($selectedOption->is_correct) {
+                                $score          = $question->score;
+                                $question_score = $score;
+                                $is_correct     = true;
                             }
                         }
-                        break;
+                    }
+                    break;
 
-                    case 'match_image':
-                        if ($answer['answer_text'] ?? null) {
-                            // Parse the matching pairs from answer_text
-                            $userPairs = json_decode($answer['answer_text'], true);
-                            if ($userPairs) {
-                                // Get correct pairs from question
-                                $correctPairs = $question->matchPairs->map(function ($pair) {
-                                    return [
-                                        'left_id' => $pair->id,
-                                        'right_id' => $pair->id
-                                    ];
-                                })->toArray();
+                case 'match_image':
+                    if ($answer['answer_text'] ?? null) {
+                        $userPairs = json_decode($answer['answer_text'], true);
+                        if ($userPairs) {
+                            $correctPairs = $question->matchPairs->map(function ($pair) {
+                                return [
+                                    'left_id'  => $pair->id,
+                                    'right_id' => $pair->id,
+                                ];
+                            })->toArray();
 
-                                // Compare user pairs with correct pairs
-                                $correctCount = 0;
-                                foreach ($userPairs as $userPair) {
-                                    foreach ($correctPairs as $correctPair) {
-                                        if (
-                                            $userPair['left_id'] == $correctPair['left_id'] &&
-                                            $userPair['right_id'] == $correctPair['right_id']
-                                        ) {
-                                            $correctCount++;
-                                            break;
-                                        }
+                            $correctCount = 0;
+                            foreach ($userPairs as $userPair) {
+                                foreach ($correctPairs as $correctPair) {
+                                    if (
+                                        $userPair['left_id'] == $correctPair['left_id'] &&
+                                        $userPair['right_id'] == $correctPair['right_id']
+                                    ) {
+                                        $correctCount++;
+                                        break;
                                     }
                                 }
+                            }
 
-                                // Calculate partial score based on correct matches
-                                if ($correctCount > 0) {
-                                    $totalPairs = count($correctPairs);
-                                    $score = ($correctCount / $totalPairs) * $question->score;
-                                    $question_score = $score;
-                                    $is_correct = ($correctCount == $totalPairs);
-                                }
+                            if ($correctCount > 0) {
+                                $totalPairs     = count($correctPairs);
+                                $score          = ($correctCount / $totalPairs) * $question->score;
+                                $question_score = $score;
+                                $is_correct     = ($correctCount == $totalPairs);
                             }
                         }
-                        break;
-                }
-
-                $studentAnswer = $this->studentAnswer->create([
-                    'student_id' => $answer['student_id'],
-                    'question_id' => $answer['question_id'],
-                    'answer_text' => $answer['answer_text'] ?? null,
-                    'answer_option_id' => $answer['answer_option_id'] ?? null,
-                    'answer_image' => $answer['answer_image'] ?? null,
-                    'submitted_at' => $answer['submitted_at'] ?? now(),
-                    'is_correct' => $is_correct,
-                    'score' => $score,
-                    'feedback' => null
-                ]);
-
-                $total_quiz_score += $question_score;
-
-                $results[] = $studentAnswer;
+                    }
+                    break;
             }
 
-            DB::commit();
+            $studentAnswer = $this->studentAnswer->create([
+                'student_id'       => $answer['student_id'],
+                'question_id'      => $answer['question_id'],
+                'answer_text'      => $answer['answer_text'] ?? null,
+                'answer_option_id' => $answer['answer_option_id'] ?? null,
+                'answer_image'     => $answer['answer_image'] ?? null,
+                'submitted_at'     => $answer['submitted_at'] ?? now(),
+                'is_correct'       => $is_correct,
+                'score'            => $score,
+                'feedback'         => null,
+            ]);
 
-            return [
-                'answers' => $results,
-                'total_quiz_score' => $total_quiz_score
-            ];
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error storing answers: ' . $e->getMessage());
-            return [
-                'status' => false,
-                'message' => 'Error storing answers: ' . $e->getMessage()
-            ];
+            $total_quiz_score += $question_score;
+            $results[]         = $studentAnswer;
         }
+
+        return [
+            'answers'          => $results,
+            'total_quiz_score' => $total_quiz_score,
+        ];
     }
 
-    public function update(Request $request)
+    public function update(Request $request): array
     {
-        try {
-            DB::beginTransaction();
-            $data = $request->all();
+        $data    = $request->all();
+        $answers = $data['answers'];
+        $results          = [];
+        $total_quiz_score = 0;
 
-            $quiz_id = $data['quiz_id'];
-            $answers = $data['answers'];
-            $results = [];
-            $total_quiz_score = 0;
+        // Ambil semua questions sekaligus (hindari N+1)
+        $questionIds = array_map(fn($a) => $a['question_id'], $answers);
+        $questions   = Question::with(['options', 'matchPairs', 'essayAnswers'])
+            ->whereIn('id', $questionIds)
+            ->get()
+            ->keyBy('id');
 
-            // Get all questions for this quiz
-            $questionIds = array_map(function ($answer) {
-                return $answer['question_id'];
-            }, $answers);
+        foreach ($answers as $answer) {
+            $question       = $questions[$answer['question_id']];
+            $score          = 0;
+            $is_correct     = false;
+            $question_score = 0;
 
-            $questions = Question::with(['options', 'matchPairs', 'essayAnswers'])
-                ->whereIn('id', $questionIds)
-                ->get()
-                ->keyBy('id');
+            switch ($question->type) {
+                case 'essay':
+                case 'guess_image':
+                    $correctAnswers = $question->essayAnswers;
+                    if ($correctAnswers->isNotEmpty() && $answer['answer_text']) {
+                        $studentAnswerText  = $this->normalizeAnswerText($answer['answer_text']);
+                        $correctAnswerTexts = $correctAnswers->pluck('option_text')->map(
+                            fn($t) => $this->normalizeAnswerText($t)
+                        )->toArray();
 
-            foreach ($answers as $answer) {
-                $question = $questions[$answer['question_id']];
-                $score = 0;
-                $is_correct = false;
-                $question_score = 0;
+                        if (in_array($studentAnswerText, $correctAnswerTexts)) {
+                            Log::info('AIGradingService: exact match ditemukan', [
+                                'student_answer' => $answer['answer_text'],
+                            ]);
+                            $score          = $question->score;
+                            $question_score = $score;
+                            $is_correct     = true;
+                        } else {
+                            Log::info('AIGradingService: exact match gagal, memanggil AI grading', [
+                                'student_answer'  => $answer['answer_text'],
+                                'correct_answers' => $correctAnswers->pluck('option_text')->toArray(),
+                            ]);
+                            $rawCorrectAnswers = $correctAnswers->pluck('option_text')->toArray();
+                            $aiRatio = $this->aiGrading->gradeAnswer(
+                                $answer['answer_text'],
+                                $rawCorrectAnswers,
+                                $question->question_text ?? '',
+                                $question->type
+                            );
 
-                switch ($question->type) {
-                    case 'essay':
-                    case 'guess_image':
-                        // Get all correct answers from essay_answers table (supports multiple answers separated by |)
-                        $correctAnswers = $question->essayAnswers;
-                        if ($correctAnswers->isNotEmpty() && $answer['answer_text']) {
-                            $studentAnswerText = $this->normalizeAnswerText($answer['answer_text']);
-                            $correctAnswerTexts = $correctAnswers->pluck('option_text')->map(
-                                fn($t) => $this->normalizeAnswerText($t)
-                            )->toArray();
-
-                            // Step 1: Exact match (fast, no API cost)
-                            if (in_array($studentAnswerText, $correctAnswerTexts)) {
-                                Log::info('AIGradingService: exact match ditemukan', [
-                                    'student_answer' => $answer['answer_text'],
-                                ]);
-                                $score = $question->score;
+                            if ($aiRatio >= 1.0) {
+                                $score          = $question->score;
                                 $question_score = $score;
-                                $is_correct = true;
-                            } else {
-                                // Step 2: AI semantic grading as fallback (returns 0.0–1.0 ratio)
-                                Log::info('AIGradingService: exact match gagal, memanggil AI grading', [
-                                    'student_answer' => $answer['answer_text'],
-                                    'correct_answers' => $correctAnswers->pluck('option_text')->toArray(),
-                                ]);
-                                $rawCorrectAnswers = $correctAnswers->pluck('option_text')->toArray();
-                                $aiRatio = $this->aiGrading->gradeAnswer(
-                                    $answer['answer_text'],
-                                    $rawCorrectAnswers,
-                                    $question->question_text ?? '',
-                                    $question->type
-                                );
-
-                                if ($aiRatio >= 1.0) {
-                                    // Inti / makna jawaban SAMA → full score
-                                    $score = $question->score;
-                                    $question_score = $score;
-                                    $is_correct = true;
-                                } elseif ($aiRatio > 0) {
-                                    // Jawaban relevan sebagian → partial score
-                                    $score = round($aiRatio * $question->score, 2);
-                                    $question_score = $score;
-                                    $is_correct = false;
-                                }
-                                // else aiRatio == 0 → tidak dapat poin (default)
-                            }
-
-                        }
-                        break;
-
-                    case 'choice_image':
-                        if ($answer['answer_option_id'] ?? null) {
-                            // Get the selected option
-                            $selectedOption = $question->options->firstWhere('id', $answer['answer_option_id']);
-                            if ($selectedOption) {
-                                $answer['answer_image'] = $selectedOption->option_image;
-                                if ($selectedOption->is_correct) {
-                                    $score = $question->score;
-                                    $question_score = $score;
-                                    $is_correct = true;
-                                }
+                                $is_correct     = true;
+                            } elseif ($aiRatio > 0) {
+                                $score          = round($aiRatio * $question->score, 2);
+                                $question_score = $score;
+                                $is_correct     = false;
                             }
                         }
-                        break;
+                    }
+                    break;
 
-                    case 'match_image':
-                        if ($answer['answer_text'] ?? null) {
-                            // Parse the matching pairs from answer_text
-                            $userPairs = json_decode($answer['answer_text'], true);
-                            if ($userPairs) {
-                                // Get correct pairs from question
-                                $correctPairs = $question->matchPairs->map(function ($pair) {
-                                    return [
-                                        'left_id' => $pair->id,
-                                        'right_id' => $pair->id
-                                    ];
-                                })->toArray();
+                case 'choice_image':
+                    if ($answer['answer_option_id'] ?? null) {
+                        $selectedOption = $question->options->firstWhere('id', $answer['answer_option_id']);
+                        if ($selectedOption) {
+                            $answer['answer_image'] = $selectedOption->option_image;
+                            if ($selectedOption->is_correct) {
+                                $score          = $question->score;
+                                $question_score = $score;
+                                $is_correct     = true;
+                            }
+                        }
+                    }
+                    break;
 
-                                // Compare user pairs with correct pairs
-                                $correctCount = 0;
-                                foreach ($userPairs as $userPair) {
-                                    foreach ($correctPairs as $correctPair) {
-                                        if (
-                                            $userPair['left_id'] == $correctPair['left_id'] &&
-                                            $userPair['right_id'] == $correctPair['right_id']
-                                        ) {
-                                            $correctCount++;
-                                            break;
-                                        }
+                case 'match_image':
+                    if ($answer['answer_text'] ?? null) {
+                        $userPairs = json_decode($answer['answer_text'], true);
+                        if ($userPairs) {
+                            $correctPairs = $question->matchPairs->map(function ($pair) {
+                                return [
+                                    'left_id'  => $pair->id,
+                                    'right_id' => $pair->id,
+                                ];
+                            })->toArray();
+
+                            $correctCount = 0;
+                            foreach ($userPairs as $userPair) {
+                                foreach ($correctPairs as $correctPair) {
+                                    if (
+                                        $userPair['left_id'] == $correctPair['left_id'] &&
+                                        $userPair['right_id'] == $correctPair['right_id']
+                                    ) {
+                                        $correctCount++;
+                                        break;
                                     }
                                 }
+                            }
 
-                                // Calculate partial score based on correct matches
-                                if ($correctCount > 0) {
-                                    $totalPairs = count($correctPairs);
-                                    $score = ($correctCount / $totalPairs) * $question->score;
-                                    $question_score = $score;
-                                    $is_correct = ($correctCount == $totalPairs);
-                                }
+                            if ($correctCount > 0) {
+                                $totalPairs     = count($correctPairs);
+                                $score          = ($correctCount / $totalPairs) * $question->score;
+                                $question_score = $score;
+                                $is_correct     = ($correctCount == $totalPairs);
                             }
                         }
-                        break;
-                }
-
-                // Update or create student answer
-                if (isset($answer['id'])) {
-                    // Update existing answer
-                    $studentAnswer = $this->studentAnswer->findOrFail($answer['id']);
-                    $studentAnswer->update([
-                        'student_id' => $answer['student_id'],
-                        'question_id' => $answer['question_id'],
-                        'answer_text' => $answer['answer_text'] ?? null,
-                        'answer_option_id' => $answer['answer_option_id'] ?? null,
-                        'answer_image' => $answer['answer_image'] ?? null,
-                        'submitted_at' => $answer['submitted_at'] ?? now(),
-                        'is_correct' => $is_correct,
-                        'score' => $score,
-                        'feedback' => $answer['feedback'] ?? null
-                    ]);
-                }
-
-                $total_quiz_score += $question_score;
-                $results[] = $studentAnswer;
+                    }
+                    break;
             }
 
-            DB::commit();
-            return [
-                'answers' => $results,
-                'total_quiz_score' => $total_quiz_score
-            ];
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error updating student answer: ' . $e->getMessage());
-            return [
-                'status' => false,
-                'message' => 'Error updating student answer: ' . $e->getMessage()
-            ];
+            // Update existing answer jika ada id
+            if (isset($answer['id'])) {
+                $studentAnswer = $this->studentAnswer->findOrFail($answer['id']);
+                $studentAnswer->update([
+                    'student_id'       => $answer['student_id'],
+                    'question_id'      => $answer['question_id'],
+                    'answer_text'      => $answer['answer_text'] ?? null,
+                    'answer_option_id' => $answer['answer_option_id'] ?? null,
+                    'answer_image'     => $answer['answer_image'] ?? null,
+                    'submitted_at'     => $answer['submitted_at'] ?? now(),
+                    'is_correct'       => $is_correct,
+                    'score'            => $score,
+                    'feedback'         => $answer['feedback'] ?? null,
+                ]);
+            }
+
+            $total_quiz_score += $question_score;
+            $results[]         = $studentAnswer;
         }
+
+        return [
+            'answers'          => $results,
+            'total_quiz_score' => $total_quiz_score,
+        ];
     }
 
     public function delete(Request $request)
