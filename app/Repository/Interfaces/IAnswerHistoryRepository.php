@@ -36,4 +36,9 @@ interface IAnswerHistoryRepository
      * Ambil history berdasarkan quiz_id.
      */
     public function getByQuiz(int $quizId);
+
+    /**
+     * Ambil detail history berdasarkan id.
+     */
+    public function getByDetail(int $studentId, int $quizId);
 }

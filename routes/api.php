@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ApiAnswer\AnswerHistoryApiController;
 use App\Http\Controllers\ApiAnswer\StudentAnswerApiController;
 use App\Http\Controllers\ApiAuth\AuthApiController;
 use App\Http\Controllers\ApiClass\ClassApiController;
@@ -130,6 +131,13 @@ Route::middleware(['auth:sanctum', 'check.token.expiration'])->group(function ()
                 Route::delete('/', [StudentAnswerApiController::class, 'destroy']);
             });
 
+            Route::prefix('answer-history')->group(function () {
+                Route::get('/', [AnswerHistoryApiController::class, 'index']);
+                Route::get('/student/{studentId}', [AnswerHistoryApiController::class, 'getByStudent']);
+                Route::get('/quiz/{quizId}', [AnswerHistoryApiController::class, 'getByQuiz']);
+                Route::get('/detail/{studentId}/{quizId}', [AnswerHistoryApiController::class, 'getByDetail']);
+            });
+
             Route::prefix('quizzes')->group(function () {
                 Route::get('/{quizId}/results', [QuizApiController::class, 'getQuizResults']);
                 Route::get('/results/{userId}', [QuizApiController::class, 'getUserQuizResults']);
@@ -172,6 +180,12 @@ Route::middleware(['auth:sanctum', 'check.token.expiration'])->group(function ()
                 Route::put('/', [StudentAnswerApiController::class, 'update']);
                 Route::post('/', [StudentAnswerApiController::class, 'store']);
                 Route::delete('/', [StudentAnswerApiController::class, 'destroy']);
+            });
+
+            Route::prefix('answer-history')->group(function () {
+                Route::get('/', [AnswerHistoryApiController::class, 'getMyHistory']);
+                Route::get('/quiz/{quizId}', [AnswerHistoryApiController::class, 'getMyDetailHistory']);
+                // Route::get('/detail/{quizId}', [AnswerHistoryApiController::class, 'getMyDetailHistory']);
             });
 
             Route::prefix('quizzes')->group(function () {
