@@ -37,12 +37,45 @@ class UserAnswerRepository implements IUserAnswerRepository
         $data    = $request->all();
         $answers = $data['answers'];
 
+        // --- Validasi: quiz_id harus ada dan valid ---
+        $quizId = $data['quiz_id'] ?? null;
+        if (!$quizId) {
+            return [
+                'status'  => false,
+                'message' => 'quiz_id wajib disertakan dalam request.',
+            ];
+        }
+
+        $quiz = \App\Models\Quiz::find($quizId);
+        if (!$quiz) {
+            return [
+                'status'  => false,
+                'message' => "Quiz dengan id {$quizId} tidak ditemukan.",
+            ];
+        }
+
         // Ambil semua questions sekaligus (hindari N+1)
         $questionIds = array_map(fn($a) => $a['question_id'], $answers);
         $questions   = Question::with(['options', 'matchPairs', 'essayAnswers'])
             ->whereIn('id', $questionIds)
             ->get()
             ->keyBy('id');
+
+        // --- Validasi: semua question_id harus milik quiz_id yang diberikan ---
+        foreach ($questionIds as $qId) {
+            if (!isset($questions[$qId])) {
+                return [
+                    'status'  => false,
+                    'message' => "question_id {$qId} tidak ditemukan.",
+                ];
+            }
+            if ((int) $questions[$qId]->quiz_id !== (int) $quizId) {
+                return [
+                    'status'  => false,
+                    'message' => "question_id {$qId} bukan milik quiz_id {$quizId}.",
+                ];
+            }
+        }
 
         $results          = [];
         $total_quiz_score = 0;
@@ -103,49 +136,106 @@ class UserAnswerRepository implements IUserAnswerRepository
                     break;
 
                 case 'choice_image':
+                    // Validasi: choice_image tidak boleh menerima answer_text
+                    if (!empty($answer['answer_text'])) {
+                        return [
+                            'status'  => false,
+                            'message' => "Soal choice_image (question_id: {$answer['question_id']}) tidak boleh menerima answer_text. Gunakan answer_option_id.",
+                        ];
+                    }
+
                     if ($answer['answer_option_id'] ?? null) {
                         $selectedOption = $question->options->firstWhere('id', $answer['answer_option_id']);
-                        if ($selectedOption) {
-                            $answer['answer_image'] = $selectedOption->option_image;
-                            if ($selectedOption->is_correct) {
-                                $score          = $question->score;
-                                $question_score = $score;
-                                $is_correct     = true;
-                            }
+
+                        // Validasi: answer_option_id harus milik question ini
+                        if (!$selectedOption) {
+                            return [
+                                'status'  => false,
+                                'message' => "answer_option_id {$answer['answer_option_id']} tidak valid untuk question_id {$answer['question_id']}.",
+                            ];
+                        }
+
+                        $answer['answer_image'] = $selectedOption->option_image;
+                        if ($selectedOption->is_correct) {
+                            $score          = $question->score;
+                            $question_score = $score;
+                            $is_correct     = true;
                         }
                     }
                     break;
 
                 case 'match_image':
+                    // Validasi: match_image tidak boleh menerima answer_option_id
+                    if (!empty($answer['answer_option_id'])) {
+                        return [
+                            'status'  => false,
+                            'message' => "Soal match_image (question_id: {$answer['question_id']}) tidak boleh menerima answer_option_id. Gunakan answer_text berformat JSON pasangan.",
+                        ];
+                    }
+
                     if ($answer['answer_text'] ?? null) {
                         $userPairs = json_decode($answer['answer_text'], true);
-                        if ($userPairs) {
-                            $correctPairs = $question->matchPairs->map(function ($pair) {
-                                return [
-                                    'left_id'  => $pair->id,
-                                    'right_id' => $pair->id,
-                                ];
-                            })->toArray();
 
-                            $correctCount = 0;
-                            foreach ($userPairs as $userPair) {
-                                foreach ($correctPairs as $correctPair) {
-                                    if (
-                                        $userPair['left_id'] == $correctPair['left_id'] &&
-                                        $userPair['right_id'] == $correctPair['right_id']
-                                    ) {
-                                        $correctCount++;
-                                        break;
-                                    }
+                        // Validasi: answer_text harus berupa JSON array yang valid
+                        if ($userPairs === null) {
+                            return [
+                                'status'  => false,
+                                'message' => "answer_text untuk soal match_image (question_id: {$answer['question_id']}) harus berupa JSON array yang valid.",
+                            ];
+                        }
+
+                        // Validasi: setiap pair harus memiliki key left_id dan right_id
+                        foreach ($userPairs as $idx => $userPair) {
+                            if (!isset($userPair['left_id']) || !isset($userPair['right_id'])) {
+                                return [
+                                    'status'  => false,
+                                    'message' => "Pasangan ke-" . ($idx + 1) . " pada soal match_image (question_id: {$answer['question_id']}) harus memiliki 'left_id' dan 'right_id'.",
+                                ];
+                            }
+                        }
+
+                        // Validasi: left_id dan right_id harus sesuai dengan matchPairs milik question ini
+                        $validPairIds = $question->matchPairs->pluck('id')->toArray();
+                        foreach ($userPairs as $userPair) {
+                            if (!in_array($userPair['left_id'], $validPairIds)) {
+                                return [
+                                    'status'  => false,
+                                    'message' => "left_id {$userPair['left_id']} tidak valid untuk question_id {$answer['question_id']}.",
+                                ];
+                            }
+                            if (!in_array($userPair['right_id'], $validPairIds)) {
+                                return [
+                                    'status'  => false,
+                                    'message' => "right_id {$userPair['right_id']} tidak valid untuk question_id {$answer['question_id']}.",
+                                ];
+                            }
+                        }
+
+                        $correctPairs = $question->matchPairs->map(function ($pair) {
+                            return [
+                                'left_id'  => $pair->id,
+                                'right_id' => $pair->id,
+                            ];
+                        })->toArray();
+
+                        $correctCount = 0;
+                        foreach ($userPairs as $userPair) {
+                            foreach ($correctPairs as $correctPair) {
+                                if (
+                                    $userPair['left_id'] == $correctPair['left_id'] &&
+                                    $userPair['right_id'] == $correctPair['right_id']
+                                ) {
+                                    $correctCount++;
+                                    break;
                                 }
                             }
+                        }
 
-                            if ($correctCount > 0) {
-                                $totalPairs     = count($correctPairs);
-                                $score          = ($correctCount / $totalPairs) * $question->score;
-                                $question_score = $score;
-                                $is_correct     = ($correctCount == $totalPairs);
-                            }
+                        if ($correctCount > 0) {
+                            $totalPairs     = count($correctPairs);
+                            $score          = ($correctCount / $totalPairs) * $question->score;
+                            $question_score = $score;
+                            $is_correct     = ($correctCount == $totalPairs);
                         }
                     }
                     break;
@@ -180,12 +270,45 @@ class UserAnswerRepository implements IUserAnswerRepository
         $results          = [];
         $total_quiz_score = 0;
 
+        // --- Validasi: quiz_id harus ada dan valid ---
+        $quizId = $data['quiz_id'] ?? null;
+        if (!$quizId) {
+            return [
+                'status'  => false,
+                'message' => 'quiz_id wajib disertakan dalam request.',
+            ];
+        }
+
+        $quiz = \App\Models\Quiz::find($quizId);
+        if (!$quiz) {
+            return [
+                'status'  => false,
+                'message' => "Quiz dengan id {$quizId} tidak ditemukan.",
+            ];
+        }
+
         // Ambil semua questions sekaligus (hindari N+1)
         $questionIds = array_map(fn($a) => $a['question_id'], $answers);
         $questions   = Question::with(['options', 'matchPairs', 'essayAnswers'])
             ->whereIn('id', $questionIds)
             ->get()
             ->keyBy('id');
+
+        // --- Validasi: semua question_id harus milik quiz_id yang diberikan ---
+        foreach ($questionIds as $qId) {
+            if (!isset($questions[$qId])) {
+                return [
+                    'status'  => false,
+                    'message' => "question_id {$qId} tidak ditemukan.",
+                ];
+            }
+            if ((int) $questions[$qId]->quiz_id !== (int) $quizId) {
+                return [
+                    'status'  => false,
+                    'message' => "question_id {$qId} bukan milik quiz_id {$quizId}.",
+                ];
+            }
+        }
 
         foreach ($answers as $answer) {
             $question       = $questions[$answer['question_id']];
@@ -237,49 +360,106 @@ class UserAnswerRepository implements IUserAnswerRepository
                     break;
 
                 case 'choice_image':
+                    // Validasi: choice_image tidak boleh menerima answer_text
+                    if (!empty($answer['answer_text'])) {
+                        return [
+                            'status'  => false,
+                            'message' => "Soal choice_image (question_id: {$answer['question_id']}) tidak boleh menerima answer_text. Gunakan answer_option_id.",
+                        ];
+                    }
+
                     if ($answer['answer_option_id'] ?? null) {
                         $selectedOption = $question->options->firstWhere('id', $answer['answer_option_id']);
-                        if ($selectedOption) {
-                            $answer['answer_image'] = $selectedOption->option_image;
-                            if ($selectedOption->is_correct) {
-                                $score          = $question->score;
-                                $question_score = $score;
-                                $is_correct     = true;
-                            }
+
+                        // Validasi: answer_option_id harus milik question ini
+                        if (!$selectedOption) {
+                            return [
+                                'status'  => false,
+                                'message' => "answer_option_id {$answer['answer_option_id']} tidak valid untuk question_id {$answer['question_id']}.",
+                            ];
+                        }
+
+                        $answer['answer_image'] = $selectedOption->option_image;
+                        if ($selectedOption->is_correct) {
+                            $score          = $question->score;
+                            $question_score = $score;
+                            $is_correct     = true;
                         }
                     }
                     break;
 
                 case 'match_image':
+                    // Validasi: match_image tidak boleh menerima answer_option_id
+                    if (!empty($answer['answer_option_id'])) {
+                        return [
+                            'status'  => false,
+                            'message' => "Soal match_image (question_id: {$answer['question_id']}) tidak boleh menerima answer_option_id. Gunakan answer_text berformat JSON pasangan.",
+                        ];
+                    }
+
                     if ($answer['answer_text'] ?? null) {
                         $userPairs = json_decode($answer['answer_text'], true);
-                        if ($userPairs) {
-                            $correctPairs = $question->matchPairs->map(function ($pair) {
-                                return [
-                                    'left_id'  => $pair->id,
-                                    'right_id' => $pair->id,
-                                ];
-                            })->toArray();
 
-                            $correctCount = 0;
-                            foreach ($userPairs as $userPair) {
-                                foreach ($correctPairs as $correctPair) {
-                                    if (
-                                        $userPair['left_id'] == $correctPair['left_id'] &&
-                                        $userPair['right_id'] == $correctPair['right_id']
-                                    ) {
-                                        $correctCount++;
-                                        break;
-                                    }
+                        // Validasi: answer_text harus berupa JSON array yang valid
+                        if ($userPairs === null) {
+                            return [
+                                'status'  => false,
+                                'message' => "answer_text untuk soal match_image (question_id: {$answer['question_id']}) harus berupa JSON array yang valid.",
+                            ];
+                        }
+
+                        // Validasi: setiap pair harus memiliki key left_id dan right_id
+                        foreach ($userPairs as $idx => $userPair) {
+                            if (!isset($userPair['left_id']) || !isset($userPair['right_id'])) {
+                                return [
+                                    'status'  => false,
+                                    'message' => "Pasangan ke-" . ($idx + 1) . " pada soal match_image (question_id: {$answer['question_id']}) harus memiliki 'left_id' dan 'right_id'.",
+                                ];
+                            }
+                        }
+
+                        // Validasi: left_id dan right_id harus sesuai dengan matchPairs milik question ini
+                        $validPairIds = $question->matchPairs->pluck('id')->toArray();
+                        foreach ($userPairs as $userPair) {
+                            if (!in_array($userPair['left_id'], $validPairIds)) {
+                                return [
+                                    'status'  => false,
+                                    'message' => "left_id {$userPair['left_id']} tidak valid untuk question_id {$answer['question_id']}.",
+                                ];
+                            }
+                            if (!in_array($userPair['right_id'], $validPairIds)) {
+                                return [
+                                    'status'  => false,
+                                    'message' => "right_id {$userPair['right_id']} tidak valid untuk question_id {$answer['question_id']}.",
+                                ];
+                            }
+                        }
+
+                        $correctPairs = $question->matchPairs->map(function ($pair) {
+                            return [
+                                'left_id'  => $pair->id,
+                                'right_id' => $pair->id,
+                            ];
+                        })->toArray();
+
+                        $correctCount = 0;
+                        foreach ($userPairs as $userPair) {
+                            foreach ($correctPairs as $correctPair) {
+                                if (
+                                    $userPair['left_id'] == $correctPair['left_id'] &&
+                                    $userPair['right_id'] == $correctPair['right_id']
+                                ) {
+                                    $correctCount++;
+                                    break;
                                 }
                             }
+                        }
 
-                            if ($correctCount > 0) {
-                                $totalPairs     = count($correctPairs);
-                                $score          = ($correctCount / $totalPairs) * $question->score;
-                                $question_score = $score;
-                                $is_correct     = ($correctCount == $totalPairs);
-                            }
+                        if ($correctCount > 0) {
+                            $totalPairs     = count($correctPairs);
+                            $score          = ($correctCount / $totalPairs) * $question->score;
+                            $question_score = $score;
+                            $is_correct     = ($correctCount == $totalPairs);
                         }
                     }
                     break;
