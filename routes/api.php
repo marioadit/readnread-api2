@@ -55,6 +55,8 @@ Route::middleware(['auth:sanctum', 'check.token.expiration'])->group(function ()
                 Route::get('/student-answers/{idstudent}/{idanswer}', [UserApiController::class, 'getStudentAnswersAdmin']);
             });
 
+            // Route::get('/dashboard/admin', [UserApiController::class, 'getAdminDashboard']);
+
             Route::get('/user-quiz', [UserApiController::class, 'getUserQuiz']);
 
             Route::get('/students', [UserApiController::class, 'getUserStudent']);
@@ -143,6 +145,20 @@ Route::middleware(['auth:sanctum', 'check.token.expiration'])->group(function ()
                 Route::get('/results/{userId}', [QuizApiController::class, 'getUserQuizResults']);
                 Route::get('/{userId}/results', [QuizApiController::class, 'getUserQuizResults']);
             });
+        });
+    });
+
+    // Guru routes
+    Route::middleware(['auth:sanctum', 'role:guru'])->group(function () {
+        Route::prefix('guru')->group(function () {
+            Route::get('/dashboard/teacher', [UserApiController::class, 'getTeacherDashboard']);
+        });
+    });
+
+    // Admin routes
+    Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+        Route::prefix('admin')->group(function () {
+            Route::get('/dashboard/admin', [UserApiController::class, 'getAdminDashboard']);
         });
     });
 

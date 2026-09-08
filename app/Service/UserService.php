@@ -103,4 +103,14 @@ class UserService
     {
         return $this->userRepository->getUserQuiz();
     }
+
+    public function getTeacherDashboard()
+    {
+        return $this->userRepository->getTeacherDashboard();
+    }
+
+    public function getAdminDashboard()
+    {
+        return $this->userRepository->getAdminDashboard();
+    }
 }

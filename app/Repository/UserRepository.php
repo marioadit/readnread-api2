@@ -3,6 +3,10 @@
 namespace App\Repository;
 
 use App\Models\User;
+use App\Models\Classes;
+use App\Models\Lesson;
+use App\Models\Quiz;
+use App\Models\AnswersHistory;
 use App\Repository\Interfaces\UserRepositoryInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -256,6 +260,170 @@ class UserRepository implements UserRepositoryInterface
             return [
                 'status' => false,
                 'message' => 'Error retrieving user quiz: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    public function getTeacherDashboard()
+    {
+        try {
+            $user = Auth::user();
+            if (!$user) {
+                return [
+                    'status' => false,
+                    'message' => 'Unauthenticated'
+                ];
+            }
+
+            $teacherId = $user->id;
+
+            // Get classes taught by this teacher
+            $classes = Classes::where('teacher_id', $teacherId)->get();
+            $classIds = $classes->pluck('id');
+
+            $totalClasses = $classes->count();
+
+            // Total students in teacher's classes
+            $totalStudents = DB::table('class_students')
+                ->whereIn('class_id', $classIds)
+                ->distinct('student_id')
+                ->count('student_id');
+
+            // Lessons in teacher's classes
+            $lessons = Lesson::whereIn('class_id', $classIds)->get();
+            $lessonIds = $lessons->pluck('id');
+
+            // Quizzes in teacher's classes
+            $quizzes = Quiz::whereIn('lesson_id', $lessonIds)->get();
+            $totalQuizzes = $quizzes->count();
+            $activeQuizzes = $quizzes->where('is_active', true)->count();
+
+            // Completed quizzes from AnswersHistory
+            $answersHistory = AnswersHistory::whereIn('class_id', $classIds)->get();
+            $completedQuizzesCount = $answersHistory->count();
+
+            // Perfect scores (percentage_score >= 100 or correct_answers == total_questions)
+            $perfectScoresCount = $answersHistory->filter(function ($history) {
+                return $history->percentage_score >= 100 || 
+                       ($history->total_questions > 0 && $history->correct_answers == $history->total_questions);
+            })->count();
+
+            // Completed lessons count
+            $completedLessonsCount = $answersHistory->pluck('lesson_id')->unique()->filter()->count();
+            $totalLessonsCount = $lessons->count();
+
+            // Progress breakdown per class
+            $classProgress = $classes->map(function ($class) use ($answersHistory) {
+                $classLessons = Lesson::where('class_id', $class->id)->get();
+                $classLessonIds = $classLessons->pluck('id');
+                $classQuizzesCount = Quiz::whereIn('lesson_id', $classLessonIds)->count();
+
+                $classHistory = $answersHistory->where('class_id', $class->id);
+                $completedCount = $classHistory->count();
+
+                $studentsCount = DB::table('class_students')->where('class_id', $class->id)->count();
+                $totalPossible = $studentsCount * $classQuizzesCount;
+
+                $percentage = $totalPossible > 0 ? round(($completedCount / $totalPossible) * 100) : 0;
+
+                return [
+                    'class_id' => $class->id,
+                    'class_name' => $class->name,
+                    'level' => $class->level,
+                    'completed_quizzes' => $completedCount,
+                    'total_quizzes' => $classQuizzesCount,
+                    'total_students' => $studentsCount,
+                    'percentage' => $percentage,
+                ];
+            });
+
+            // Students enrolled in teacher's classes
+            $students = User::whereIn('id', function ($query) use ($classIds) {
+                $query->select('student_id')->from('class_students')->whereIn('class_id', $classIds);
+            })->with('classesEnrolled')->get();
+
+            return [
+                'status' => true,
+                'message' => 'Dashboard teacher retrieved successfully',
+                'data' => [
+                    'stats' => [
+                        'quizzes_completed' => [
+                            'completed' => $completedQuizzesCount,
+                            'total' => $totalQuizzes,
+                            'formatted' => $completedQuizzesCount . '/' . ($totalQuizzes > 0 ? $totalQuizzes : 0)
+                        ],
+                        'lessons_completed' => [
+                            'completed' => $completedLessonsCount,
+                            'total' => $totalLessonsCount,
+                            'formatted' => $completedLessonsCount . '/' . $totalLessonsCount
+                        ],
+                        'active_quizzes' => [
+                            'active' => $activeQuizzes,
+                            'total' => $totalQuizzes,
+                            'formatted' => $activeQuizzes . '/' . $totalQuizzes
+                        ],
+                        'perfect_scores' => [
+                            'perfect' => $perfectScoresCount,
+                            'total' => $completedQuizzesCount,
+                            'formatted' => $perfectScoresCount . '/' . ($completedQuizzesCount > 0 ? $completedQuizzesCount : 0)
+                        ],
+                        'total_students' => $totalStudents,
+                        'total_classes' => $totalClasses,
+                    ],
+                    'class_progress' => $classProgress,
+                    'students' => $students,
+                ]
+            ];
+        } catch (\Exception $e) {
+            return [
+                'status' => false,
+                'message' => 'Error retrieving teacher dashboard: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    public function getAdminDashboard()
+    {
+        try {
+            $totalAdmin = $this->model->where('role', 'admin')->count();
+            $totalGuru = $this->model->where('role', 'guru')->count();
+            $totalSiswa = $this->model->where('role', 'siswa')->count();
+            $totalUsers = $this->model->count();
+            $totalClasses = Classes::count();
+
+            $studentsPerClass = Classes::withCount('students')
+                ->with('teacher:id,name,email')
+                ->get()
+                ->map(function ($class) {
+                    return [
+                        'class_id' => $class->id,
+                        'class_name' => $class->name,
+                        'level' => $class->level,
+                        'semester' => $class->semester,
+                        'academic_year' => $class->academic_year,
+                        'teacher_name' => $class->teacher ? $class->teacher->name : null,
+                        'student_count' => $class->students_count,
+                    ];
+                });
+
+            return [
+                'status' => true,
+                'message' => 'Dashboard admin retrieved successfully',
+                'data' => [
+                    'stats' => [
+                        'total_admin' => $totalAdmin,
+                        'total_guru' => $totalGuru,
+                        'total_siswa' => $totalSiswa,
+                        'total_users' => $totalUsers,
+                        'total_classes' => $totalClasses,
+                    ],
+                    'students_per_class' => $studentsPerClass,
+                ]
+            ];
+        } catch (\Exception $e) {
+            return [
+                'status' => false,
+                'message' => 'Error retrieving admin dashboard: ' . $e->getMessage()
             ];
         }
     }

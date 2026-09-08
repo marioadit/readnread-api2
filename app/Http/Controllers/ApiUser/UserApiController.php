@@ -168,4 +168,26 @@ class UserApiController extends Controller
 
         return ApiResponse::success($user['data'], $user['message']);
     }
+
+    public function getTeacherDashboard()
+    {
+        $result = $this->userService->getTeacherDashboard();
+
+        if (!$result['status']) {
+            return ApiResponse::error($result['message'], 400);
+        }
+
+        return ApiResponse::success($result['data'], $result['message']);
+    }
+
+    public function getAdminDashboard()
+    {
+        $result = $this->userService->getAdminDashboard();
+
+        if (!$result['status']) {
+            return ApiResponse::error($result['message'], 400);
+        }
+
+        return ApiResponse::success($result['data'], $result['message']);
+    }
 }

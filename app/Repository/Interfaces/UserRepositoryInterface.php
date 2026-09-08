@@ -43,4 +43,8 @@ interface UserRepositoryInterface
     public function getAllStudentAnswersAdmin($idstudent);
 
     public function getUserQuiz();
+
+    public function getTeacherDashboard();
+
+    public function getAdminDashboard();
 }
