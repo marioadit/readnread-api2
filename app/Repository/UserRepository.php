@@ -191,8 +191,10 @@ class UserRepository implements UserRepositoryInterface
             ->where('status', '!=', 'aktif')
             ->get()
             ->sortBy([
-                fn ($a, $b) => ($a->classesEnrolled->first()?->id ?? 99999) <=> ($b->classesEnrolled->first()?->id ?? 99999),
-                fn ($a, $b) => strnatcasecmp($a->name, $b->name)
+                // Status 'lulus' diprioritaskan paling atas, kemudian status lainnya
+                fn ($a, $b) => ($a->status === 'lulus' ? 1 : 2) <=> ($b->status === 'lulus' ? 1 : 2),
+                // Waktu update terbaru (updated_at DESC)
+                fn ($a, $b) => strtotime($b->updated_at ?? 0) <=> strtotime($a->updated_at ?? 0)
             ])
             ->values();
 
