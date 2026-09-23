@@ -28,6 +28,8 @@ interface UserRepositoryInterface
 
     public function getUserStudent();
 
+    public function getUserStudentGraduated();
+
     public function getUserTeacher();
 
     public function getClassUser();

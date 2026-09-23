@@ -64,6 +64,7 @@ class UserRepository implements UserRepositoryInterface
         $validator = Validator::make($data, [
             'name' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:users,email,' . $id,
+            'status' => 'sometimes|in:aktif,lulus,pindah',
         ]);
 
         if ($validator->fails()) {
@@ -142,7 +143,8 @@ class UserRepository implements UserRepositoryInterface
             'name' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:users,email,' . $id,
             'password' => 'sometimes|min:8',
-            'role' => 'sometimes|in:siswa,guru,admin'
+            'role' => 'sometimes|in:siswa,guru,admin',
+            'status' => 'sometimes|in:aktif,lulus,pindah'
         ]);
 
         if ($validator->fails()) {
@@ -164,11 +166,40 @@ class UserRepository implements UserRepositoryInterface
 
     public function getUserStudent()
     {
-        $data = $this->model->with('classesEnrolled')->where('role', 'siswa')->get();
+        $data = $this->model->with('classesEnrolled')
+            ->where('role', 'siswa')
+            ->where('status', 'aktif')
+            ->get()
+            ->sortBy([
+                fn ($a, $b) => ($a->classesEnrolled->first()?->id ?? 99999) <=> ($b->classesEnrolled->first()?->id ?? 99999),
+                fn ($a, $b) => strnatcasecmp($a->name, $b->name)
+            ])
+            ->values();
+
         Log::info($data);
         return [
             'status' => true,
-            'message' => 'Data siswa berhasil ditemukan',
+            'message' => 'Data siswa aktif berhasil ditemukan',
+            'data' => $data
+        ];
+    }
+
+    public function getUserStudentGraduated()
+    {
+        $data = $this->model->with('classesEnrolled')
+            ->where('role', 'siswa')
+            ->where('status', '!=', 'aktif')
+            ->get()
+            ->sortBy([
+                fn ($a, $b) => ($a->classesEnrolled->first()?->id ?? 99999) <=> ($b->classesEnrolled->first()?->id ?? 99999),
+                fn ($a, $b) => strnatcasecmp($a->name, $b->name)
+            ])
+            ->values();
+
+        Log::info($data);
+        return [
+            'status' => true,
+            'message' => 'Data siswa lulus/alumni berhasil ditemukan',
             'data' => $data
         ];
     }
@@ -202,7 +233,9 @@ class UserRepository implements UserRepositoryInterface
     {
         $user = Auth::user();
 
-        $classes = $user->classes()->with('lessons')->get();
+        $classes = $user->classes()->orderBy('classes.id', 'asc')->with(['lessons' => function ($query) {
+            $query->orderBy('id', 'asc');
+        }])->get();
 
         $lessons = $classes->flatMap(function ($class) {
             return $class->lessons;
@@ -387,7 +420,8 @@ class UserRepository implements UserRepositoryInterface
         try {
             $totalAdmin = $this->model->where('role', 'admin')->count();
             $totalGuru = $this->model->where('role', 'guru')->count();
-            $totalSiswa = $this->model->where('role', 'siswa')->count();
+            $totalSiswa = $this->model->where('role', 'siswa')->where('status', 'aktif')->count();
+            $totalAlumni = $this->model->where('role', 'siswa')->where('status', '!=', 'aktif')->count();
             $totalUsers = $this->model->count();
             $totalClasses = Classes::count();
 
@@ -414,6 +448,7 @@ class UserRepository implements UserRepositoryInterface
                         'total_admin' => $totalAdmin,
                         'total_guru' => $totalGuru,
                         'total_siswa' => $totalSiswa,
+                        'total_alumni' => $totalAlumni,
                         'total_users' => $totalUsers,
                         'total_classes' => $totalClasses,
                     ],

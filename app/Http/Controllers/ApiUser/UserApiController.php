@@ -112,6 +112,12 @@ class UserApiController extends Controller
         return ApiResponse::success($user);
     }
 
+    public function getUserStudentGraduated()
+    {
+        $user = $this->userService->getUserStudentGraduated();
+        return ApiResponse::success($user);
+    }
+
     public function getUserTeacher()
     {
         $user = $this->userService->getUserTeacher();

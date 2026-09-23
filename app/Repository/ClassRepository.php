@@ -8,7 +8,6 @@ use App\Repository\Interfaces\ClassRepositoryInterface;
 use Illuminate\Support\Facades\Validator;
 
 class ClassRepository implements ClassRepositoryInterface
-
 {
     protected $model;
 
@@ -19,7 +18,7 @@ class ClassRepository implements ClassRepositoryInterface
 
     public function getAll()
     {
-        return $this->model->with('teacher')->get();
+        return $this->model->with('teacher')->orderBy('level', 'asc')->orderBy('name', 'asc')->get();
     }
 
     public function getById($id)
@@ -135,4 +134,4 @@ class ClassRepository implements ClassRepositoryInterface
             'message' => 'Siswa berhasil dihapus dari kelas'
         ];
     }
-} 
+}

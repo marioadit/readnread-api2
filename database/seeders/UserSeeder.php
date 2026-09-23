@@ -21,35 +21,49 @@ class UserSeeder extends Seeder
             'role' => 'admin',
         ]);
 
-        User::create([
-            'name' => 'Admin User 2',
-            'email' => 'admin2@example.com',
-            'password' => Hash::make('password'),
-            'role' => 'admin',
-        ]);
+        // User::create([
+        //     'name' => 'Admin User 2',
+        //     'email' => 'admin2@example.com',
+        //     'password' => Hash::make('password'),
+        //     'role' => 'admin',
+        // ]);
 
         User::create([
-            'name' => 'Guru SD',
-            'email' => 'guru@example.com', 
+            'name' => 'Sumanto',
+            'email' => 'guru@example.com',
             'password' => Hash::make('password'),
             'role' => 'guru',
         ]);
 
         User::create([
-            'name' => 'Siswa SD',
+            'name' => 'Budi galaksi',
             'email' => 'siswa@example.com',
             'password' => Hash::make('password'),
             'role' => 'siswa',
         ]);
 
-        // Create 10 additional siswa users
-        for ($i = 1; $i <= 45; $i++) {
-            User::create([
-                'name' => 'Siswa SD ' . $i,
-                'email' => 'siswa' . $i . '@example.com',
-                'password' => Hash::make('password'),
-                'role' => 'siswa',
-            ]);
-        }
+        User::create([
+            'name' => 'Teknik admin',
+            'email' => 'teknikadmin@example.com',
+            'password' => Hash::make('password'),
+            'role' => 'admin',
+        ]);
+
+        User::create([
+            'name' => 'Teknik siswa',
+            'email' => 'tekniksiswa@example.com',
+            'password' => Hash::make('password'),
+            'role' => 'siswa',
+        ]);
+
+        // // Create 10 additional siswa users
+        // for ($i = 1; $i <= 10; $i++) {
+        //     User::create([
+        //         'name' => 'Siswa SD ' . $i,
+        //         'email' => 'siswa' . $i . '@example.com',
+        //         'password' => Hash::make('password'),
+        //         'role' => 'siswa',
+        //     ]);
+        // }
     }
 }

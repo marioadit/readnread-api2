@@ -60,6 +60,7 @@ Route::middleware(['auth:sanctum', 'check.token.expiration'])->group(function ()
             Route::get('/user-quiz', [UserApiController::class, 'getUserQuiz']);
 
             Route::get('/students', [UserApiController::class, 'getUserStudent']);
+
             Route::get('/teachers', [UserApiController::class, 'getUserTeacher']);
 
             // Admin Class Routes
@@ -159,6 +160,7 @@ Route::middleware(['auth:sanctum', 'check.token.expiration'])->group(function ()
     Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
         Route::prefix('admin')->group(function () {
             Route::get('/dashboard/admin', [UserApiController::class, 'getAdminDashboard']);
+            Route::get('/alumni', [UserApiController::class, 'getUserStudentGraduated']);
         });
     });
 

@@ -64,6 +64,11 @@ class UserService
         return $this->userRepository->getUserStudent();
     }
 
+    public function getUserStudentGraduated()
+    {
+        return $this->userRepository->getUserStudentGraduated();
+    }
+
     public function getUserTeacher()
     {
         return $this->userRepository->getUserTeacher();

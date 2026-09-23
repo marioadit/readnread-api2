@@ -26,7 +26,8 @@ class UserValidate extends FormRequest
             'email' => 'required|email|unique:users',
             'password' => 'required|min:8|confirmed',
             'password_confirmation' => 'required|same:password',
-            'role' => 'sometimes|in:siswa,guru,admin'
+            'role' => 'sometimes|in:siswa,guru,admin',
+            'status' => 'sometimes|in:aktif,lulus,pindah'
         ];
     }
 } 

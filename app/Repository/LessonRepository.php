@@ -21,7 +21,7 @@ class LessonRepository implements LessonRepositoryInterface
 
     public function getAll()
     {
-        return $this->model->with('class')->get();
+        return $this->model->with('class')->orderBy('class_id', 'asc')->orderBy('id', 'asc')->get();
     }
 
     public function getById($id)
