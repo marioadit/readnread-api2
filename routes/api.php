@@ -118,7 +118,21 @@ Route::middleware(['auth:sanctum', 'check.token.expiration'])->group(function ()
                 Route::get('/{id}/detail', [QuestionApiController::class, 'detail']);
             });
 
+            // Route::prefix('essay-answers')->group(function () {
+            //     Route::get('/{id}', [OptionApiController::class, 'showEssayAnswer']);
+            //     Route::post('/', [OptionApiController::class, 'storeEssayAnswer']);
+            //     Route::put('/{id}', [OptionApiController::class, 'updateEssayAnswer']);
+            //     Route::delete('/{id}', [OptionApiController::class, 'destroyEssayAnswer']);
+            // });
+
             Route::prefix('options')->group(function () {
+                Route::prefix('essay-answers')->group(function () {
+                    Route::get('/{id}', [OptionApiController::class, 'showEssayAnswer']);
+                    Route::post('/', [OptionApiController::class, 'storeEssayAnswer']);
+                    Route::put('/{id}', [OptionApiController::class, 'updateEssayAnswer']);
+                    Route::delete('/{id}', [OptionApiController::class, 'destroyEssayAnswer']);
+                });
+
                 Route::get('/', [OptionApiController::class, 'index']);
                 Route::get('/{id}', [OptionApiController::class, 'show']);
                 Route::post('/', [OptionApiController::class, 'store']);

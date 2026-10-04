@@ -12,4 +12,10 @@ interface OptionRepositoryInterface
     public function update($id, Request $request);
     public function delete($id);
     public function getWithStudentAnswerandQuestion($optionId);
+
+    // Essay Answer methods
+    public function getEssayAnswerById($id);
+    public function createEssayAnswer(array $data);
+    public function updateEssayAnswer($id, Request $request);
+    public function deleteEssayAnswer($id);
 }

@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Repository\Interfaces\OptionRepositoryInterface;
+use App\Models\EssayAnswer;
 use App\Models\Option;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\UploadedFile;
@@ -147,5 +148,80 @@ class OptionRepository implements OptionRepositoryInterface
     public function getWithStudentAnswerandQuestion($optionId)
     {
         return $this->model->with(['studentAnswers', 'question'])->findOrFail($optionId);
+    }
+
+    public function getEssayAnswerById($id)
+    {
+        return EssayAnswer::with(['question'])->findOrFail($id);
+    }
+
+    public function createEssayAnswer(array $data)
+    {
+        $validator = Validator::make($data, [
+            'question_id' => 'required|exists:questions,id',
+            'option_text' => 'required|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return [
+                'status' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ];
+        }
+
+        $essayAnswer = EssayAnswer::create([
+            'question_id' => $data['question_id'],
+            'option_text' => strtolower(trim($data['option_text'])),
+        ]);
+
+        return [
+            'status' => true,
+            'message' => 'Jawaban essay berhasil dibuat',
+            'data' => $essayAnswer,
+        ];
+    }
+
+    public function updateEssayAnswer($id, Request $request)
+    {
+        $data = $request->all();
+
+        $validator = Validator::make($data, [
+            'question_id' => 'sometimes|required|exists:questions,id',
+            'option_text' => 'required|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return [
+                'status' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ];
+        }
+
+        $essayAnswer = EssayAnswer::findOrFail($id);
+
+        if (isset($data['question_id'])) {
+            $essayAnswer->question_id = $data['question_id'];
+        }
+        $essayAnswer->option_text = strtolower(trim($data['option_text']));
+        $essayAnswer->save();
+
+        return [
+            'status' => true,
+            'message' => 'Jawaban essay berhasil diperbarui',
+            'data' => $essayAnswer,
+        ];
+    }
+
+    public function deleteEssayAnswer($id)
+    {
+        $essayAnswer = EssayAnswer::findOrFail($id);
+        $essayAnswer->delete();
+
+        return [
+            'status' => true,
+            'message' => 'Jawaban essay berhasil dihapus',
+        ];
     }
 }
