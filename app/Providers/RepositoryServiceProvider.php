@@ -13,6 +13,7 @@ use App\Repository\Interfaces\UserRepositoryInterface;
 use App\Repository\Interfaces\OptionRepositoryInterface;
 use App\Repository\Interfaces\IUserAnswerRepository;
 use App\Repository\Interfaces\IAnswerHistoryRepository;
+use App\Repository\Interfaces\IStudentScoreRecapRepository;
 use App\Repository\LessonRepository;
 use App\Repository\QuestionRepository;
 use App\Repository\QuizRepository;
@@ -20,6 +21,7 @@ use App\Repository\UserRepository;
 use App\Repository\OptionRepository;
 use App\Repository\UserAnswerRepository;
 use App\Repository\AnswerHistoryRepository;
+use App\Repository\StudentScoreRecapRepository;
 use Illuminate\Support\ServiceProvider;
 
 class RepositoryServiceProvider extends ServiceProvider
@@ -38,6 +40,7 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->bind(OptionRepositoryInterface::class , OptionRepository::class);
         $this->app->bind(IUserAnswerRepository::class , UserAnswerRepository::class);
         $this->app->bind(IAnswerHistoryRepository::class , AnswerHistoryRepository::class);
+        $this->app->bind(IStudentScoreRecapRepository::class , StudentScoreRecapRepository::class);
     }
 
     /**

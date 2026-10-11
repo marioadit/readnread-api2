@@ -45,6 +45,40 @@ class AnswersHistory extends Model
         'submitted_at' => 'datetime',
     ];
 
+    /**
+     * Model events untuk auto-update rekap nilai saat ada transaksi di answers_history
+     */
+    protected static function booted()
+    {
+        static::saved(function ($history) {
+            if ($history->student_id && $history->class_level && $history->class_semester) {
+                try {
+                    app(\App\Repository\Interfaces\IStudentScoreRecapRepository::class)->recalculateForStudent(
+                        (int) $history->student_id,
+                        (string) $history->class_level,
+                        (string) $history->class_semester
+                    );
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::error('AnswersHistory booted saved error: ' . $e->getMessage());
+                }
+            }
+        });
+
+        static::deleted(function ($history) {
+            if ($history->student_id && $history->class_level && $history->class_semester) {
+                try {
+                    app(\App\Repository\Interfaces\IStudentScoreRecapRepository::class)->recalculateForStudent(
+                        (int) $history->student_id,
+                        (string) $history->class_level,
+                        (string) $history->class_semester
+                    );
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::error('AnswersHistory booted deleted error: ' . $e->getMessage());
+                }
+            }
+        });
+    }
+
     public function student()
     {
         return $this->belongsTo(User::class , 'student_id');

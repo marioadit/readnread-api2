@@ -70,4 +70,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(StudentAnswer::class, 'student_id');
     }
+
+    public function scoreRecaps()
+    {
+        return $this->hasMany(StudentScoreRecap::class, 'student_id');
+    }
 }

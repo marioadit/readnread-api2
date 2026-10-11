@@ -9,6 +9,7 @@ use App\Http\Controllers\ApiQuestion\QuestionApiController;
 use App\Http\Controllers\ApiQuiz\QuizApiController;
 use App\Http\Controllers\ApiUser\UserApiController;
 use App\Http\Controllers\ApiOption\OptionApiController;
+use App\Http\Controllers\ApiStudentRecap\StudentScoreRecapApiController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Symfony\Component\Mime\DependencyInjection\AddMimeTypeGuesserPass;
@@ -160,6 +161,12 @@ Route::middleware(['auth:sanctum', 'check.token.expiration'])->group(function ()
                 Route::get('/results/{userId}', [QuizApiController::class, 'getUserQuizResults']);
                 Route::get('/{userId}/results', [QuizApiController::class, 'getUserQuizResults']);
             });
+
+            Route::prefix('student-recaps')->group(function () {
+                Route::get('/', [StudentScoreRecapApiController::class, 'index']);
+                Route::get('/{studentId}', [StudentScoreRecapApiController::class, 'show']);
+                Route::post('/sync', [StudentScoreRecapApiController::class, 'sync']);
+            });
         });
     });
 
@@ -223,6 +230,10 @@ Route::middleware(['auth:sanctum', 'check.token.expiration'])->group(function ()
             Route::prefix('quizzes')->group(function () {
                 Route::get('/results', [QuizApiController::class, 'getUserQuizResults']);
                 Route::get('/{quizId}/results', [QuizApiController::class, 'getQuizResults']);
+            });
+
+            Route::prefix('student-recaps')->group(function () {
+                Route::get('/my-recap', [StudentScoreRecapApiController::class, 'myRecap']);
             });
         });
     });
