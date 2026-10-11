@@ -128,20 +128,35 @@ class StudentScoreRecapRepository implements IStudentScoreRecapRepository
      */
     public function getRecapMatrix(array $filters = []): array
     {
-        $query = User::where('role', 'siswa')
+        $query = User::select('users.*')
+            ->where('role', 'siswa')
+            ->addSelect([
+                'enrolled_class_level' => DB::table('classes')
+                    ->join('class_students', 'classes.id', '=', 'class_students.class_id')
+                    ->whereColumn('class_students.student_id', 'users.id')
+                    ->orderByDesc('class_students.id')
+                    ->select('classes.level')
+                    ->limit(1),
+                'enrolled_class_name' => DB::table('classes')
+                    ->join('class_students', 'classes.id', '=', 'class_students.class_id')
+                    ->whereColumn('class_students.student_id', 'users.id')
+                    ->orderByDesc('class_students.id')
+                    ->select('classes.name')
+                    ->limit(1),
+            ])
             ->with(['classesEnrolled', 'scoreRecaps']);
 
         // Filter status (aktif / lulus / dll)
         if (!empty($filters['status'])) {
-            $query->where('status', $filters['status']);
+            $query->where('users.status', $filters['status']);
         }
 
         // Filter pencarian nama / email siswa
         if (!empty($filters['search'])) {
             $searchTerm = trim($filters['search']);
             $query->where(function ($q) use ($searchTerm) {
-                $q->where('name', 'like', "%{$searchTerm}%")
-                    ->orWhere('email', 'like', "%{$searchTerm}%");
+                $q->where('users.name', 'like', "%{$searchTerm}%")
+                    ->orWhere('users.email', 'like', "%{$searchTerm}%");
             });
         }
 
@@ -153,8 +168,23 @@ class StudentScoreRecapRepository implements IStudentScoreRecapRepository
             });
         }
 
-        // Urutkan berdasarkan nama siswa
-        $query->orderBy('name', 'asc');
+        // Urutan:
+        // 1. Siswa yang memiliki kelas didahulukan di atas siswa tanpa kelas
+        // 2. Jenjang kelas tertinggi dahulu (Kelas 6 -> Kelas 1)
+        // 3. Nama kelas (A -> Z, e.g. Kelas 6 A, Kelas 6 B)
+        // 4. Nama siswa (A -> Z)
+        $query->orderByRaw('CASE WHEN enrolled_class_level IS NULL THEN 1 ELSE 0 END ASC')
+            ->orderByRaw("CASE enrolled_class_level
+                WHEN 'kelas 6' THEN 6
+                WHEN 'kelas 5' THEN 5
+                WHEN 'kelas 4' THEN 4
+                WHEN 'kelas 3' THEN 3
+                WHEN 'kelas 2' THEN 2
+                WHEN 'kelas 1' THEN 1
+                ELSE 0
+            END DESC")
+            ->orderBy('enrolled_class_name', 'asc')
+            ->orderBy('users.name', 'asc');
 
         // Jika request meminta all data tanpa pagination (misal untuk export Excel)
         if (!empty($filters['all']) && filter_var($filters['all'], FILTER_VALIDATE_BOOLEAN)) {

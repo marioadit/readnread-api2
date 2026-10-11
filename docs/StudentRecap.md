@@ -29,6 +29,12 @@ API ini digunakan untuk menampilkan rekapitulasi nilai siswa per jenjang kelas (
 | `page` | integer | Nomor halaman |
 | `all` | boolean | Set `true` untuk mengambil seluruh siswa tanpa pagination (misal untuk export Excel/PDF) |
 
+**Urutan Data (Default Ordering):**
+Data diurutkan secara hierarkis agar tampilan tabel di Frontend rapi:
+1. **Jenjang Kelas Tertinggi Dahulu**: Kelas 6 $\rightarrow$ Kelas 5 $\rightarrow$ Kelas 4 $\rightarrow$ Kelas 3 $\rightarrow$ Kelas 2 $\rightarrow$ Kelas 1 (siswa dengan kelas didahulukan di atas yang tidak memiliki kelas).
+2. **Nama Kelas (A $\rightarrow$ Z)**: e.g. Kelas 6 A lalu Kelas 6 B.
+3. **Nama Siswa (A $\rightarrow$ Z)**: Urutan alfabet nama siswa.
+
 **Response Sukses (200 OK):**
 ```json
 {
