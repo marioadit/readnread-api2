@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Models\Classes;
 use App\Models\User;
 use App\Repository\Interfaces\ClassRepositoryInterface;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class ClassRepository implements ClassRepositoryInterface
@@ -108,7 +109,7 @@ class ClassRepository implements ClassRepositoryInterface
         $class = $this->model->findOrFail($classId);
         $student = User::where('role', 'siswa')->findOrFail($studentId);
 
-        // Cek apakah siswa sudah ada di kelas
+        // Cek apakah siswa sudah ada di kelas ini
         if ($class->students()->where('users.id', $studentId)->exists()) {
             return [
                 'status' => false,
@@ -116,7 +117,13 @@ class ClassRepository implements ClassRepositoryInterface
             ];
         }
 
-        $class->students()->attach($studentId);
+        DB::transaction(function () use ($class, $student, $studentId) {
+            // Lepaskan siswa dari kelas sebelumnya jika ada agar tidak ada duplikasi kelas
+            $student->classesEnrolled()->detach();
+
+            // Tambahkan siswa ke kelas yang baru
+            $class->students()->attach($studentId);
+        });
 
         return [
             'status' => true,
