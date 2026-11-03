@@ -1,22 +1,29 @@
-# User API Documentation
+# Dokumentasi API Pengguna (User)
+
+API ini digunakan untuk mengelola data pengguna dalam sistem Sinaumatika, termasuk manajemen profil, password, dan akses berbasis peran.
 
 ## Request Headers
+
 ```http
 Accept: application/json
 Content-Type: application/json
-Authorization: Bearer {token}  // Required for all endpoints
+Authorization: Bearer {token}
 ```
 
-## Admin Endpoints
+---
 
-### 1. Get All Users
+## Endpoints — Admin & Guru
 
-#### Endpoint
+### 1. Mendapatkan Semua Pengguna
+
+**Endpoint:**
 ```http
 GET /api/admin/users
 ```
 
-#### Success Response (200 OK)
+**Akses:** Admin, Guru
+
+**Response Sukses (200 OK):**
 ```json
 {
     "status": true,
@@ -24,130 +31,139 @@ GET /api/admin/users
     "data": [
         {
             "id": 1,
-            "first_name": "John",
-            "last_name": "Doe",
-            "email": "john@example.com",
-            "birth_date": "1990-01-01",
-            "gender": "male",
-            "role": "user",
-            "created_at": "2024-03-21 10:30:00",
-            "updated_at": "2024-03-21 10:30:00"
+            "name": "Budi Santoso",
+            "email": "budi@example.com",
+            "role": "guru",
+            "status": "aktif",
+            "created_at": "2025-05-17T10:00:00.000000Z",
+            "updated_at": "2025-05-17T10:00:00.000000Z"
         }
-        // ... more users
     ]
 }
 ```
 
-### 2. Get User by ID
+---
 
-#### Endpoint
+### 2. Mendapatkan Pengguna berdasarkan ID
+
+**Endpoint:**
 ```http
 GET /api/admin/users/{id}
 ```
 
-#### Success Response (200 OK)
+**Akses:** Admin, Guru
+
+**Response Sukses (200 OK):**
 ```json
 {
     "status": true,
     "message": "Success",
     "data": {
-        "id": 1,
-        "first_name": "John",
-        "last_name": "Doe",
-        "email": "john@example.com",
-        "birth_date": "1990-01-01",
-        "gender": "male",
-        "role": "user",
-        "created_at": "2024-03-21 10:30:00",
-        "updated_at": "2024-03-21 10:30:00"
+        "id": 3,
+        "name": "Andi Pratama",
+        "email": "andi@example.com",
+        "role": "siswa",
+        "status": "aktif",
+        "created_at": "2025-05-17T10:00:00.000000Z",
+        "updated_at": "2025-05-17T10:00:00.000000Z"
     }
 }
 ```
 
-### 3. Create User
+---
 
-#### Endpoint
+### 3. Membuat Pengguna Baru
+
+**Endpoint:**
 ```http
 POST /api/admin/users
 ```
 
-#### Request Body
+**Akses:** Admin, Guru
+
+**Request Body:**
 ```json
 {
-    "email": "newuser@example.com",
+    "name": "Siti Rahayu",
+    "email": "siti@example.com",
     "password": "password123",
     "password_confirmation": "password123",
-    "first_name": "Jane",
-    "last_name": "Smith",
-    "gender": "female",
-    "birth_date": "1995-05-15"
+    "role": "siswa"
 }
 ```
 
-#### Success Response (201 Created)
+| Field | Tipe | Wajib | Keterangan |
+|-------|------|-------|-----------|
+| `name` | string | Ya | Nama lengkap |
+| `email` | string | Ya | Email unik |
+| `password` | string | Ya | Minimal 8 karakter |
+| `password_confirmation` | string | Ya | Harus sama dengan `password` |
+| `role` | string | Ya | `siswa`, `guru`, atau `admin` |
+
+**Response Sukses (201 Created):**
 ```json
 {
     "status": true,
     "message": "User created successfully",
     "data": {
-        "id": 2,
-        "first_name": "Jane",
-        "last_name": "Smith",
-        "email": "newuser@example.com",
-        "birth_date": "1995-05-15",
-        "gender": "female",
-        "role": "user",
-        "created_at": "2024-03-21 10:30:00",
-        "updated_at": "2024-03-21 10:30:00"
+        "id": 4,
+        "name": "Siti Rahayu",
+        "email": "siti@example.com",
+        "role": "siswa",
+        "status": "aktif",
+        "created_at": "2025-05-17T11:00:00.000000Z",
+        "updated_at": "2025-05-17T11:00:00.000000Z"
     }
 }
 ```
 
-### 4. Update User
+---
 
-#### Endpoint
+### 4. Mengupdate Pengguna
+
+**Endpoint:**
 ```http
 PUT /api/admin/users/{id}
 ```
 
-#### Request Body
+**Akses:** Admin, Guru
+
+**Request Body:**
 ```json
 {
-    "first_name": "Jane",
-    "last_name": "Smith",
-    "email": "jane.smith@example.com",
-    "gender": "female",
-    "birth_date": "1995-05-15"
+    "name": "Siti Rahayu Updated",
+    "email": "siti.updated@example.com"
 }
 ```
 
-#### Success Response (200 OK)
+**Response Sukses (200 OK):**
 ```json
 {
     "status": true,
     "message": "User updated successfully",
     "data": {
-        "id": 2,
-        "first_name": "Jane",
-        "last_name": "Smith",
-        "email": "jane.smith@example.com",
-        "birth_date": "1995-05-15",
-        "gender": "female",
-        "role": "user",
-        "created_at": "2024-03-21 10:30:00",
-        "updated_at": "2024-03-21 10:35:00"
+        "id": 4,
+        "name": "Siti Rahayu Updated",
+        "email": "siti.updated@example.com",
+        "role": "siswa",
+        "status": "aktif",
+        "updated_at": "2025-05-17T11:05:00.000000Z"
     }
 }
 ```
 
-### 5. Delete User
+---
 
-#### Endpoint
+### 5. Menghapus Pengguna
+
+**Endpoint:**
 ```http
 DELETE /api/admin/users/{id}
 ```
 
-#### Success Response (200 OK)
+**Akses:** Admin, Guru
+
+**Response Sukses (200 OK):**
 ```json
 {
     "status": true,
@@ -156,138 +172,429 @@ DELETE /api/admin/users/{id}
 }
 ```
 
-## User Endpoints
+---
 
-### 1. Get User Profile
+### 6. Mengupdate Profil Pengguna (oleh Admin/Guru)
 
-#### Endpoint
+**Endpoint:**
+```http
+PUT /api/admin/users/profile/{id}
+```
+
+**Akses:** Admin, Guru
+
+**Request Body:**
+```json
+{
+    "name": "Nama Baru",
+    "email": "email.baru@example.com"
+}
+```
+
+**Response Sukses (200 OK):**
+```json
+{
+    "status": true,
+    "message": "User updated successfully",
+    "data": { ... }
+}
+```
+
+---
+
+### 7. Mengupdate Password Pengguna (oleh Admin/Guru)
+
+**Endpoint:**
+```http
+PUT /api/admin/users/password/{id}
+```
+
+**Akses:** Admin, Guru
+
+**Request Body:**
+```json
+{
+    "current_password": "password_lama",
+    "password": "password_baru123",
+    "password_confirmation": "password_baru123"
+}
+```
+
+**Response Sukses (200 OK):**
+```json
+{
+    "status": true,
+    "message": "Password updated successfully",
+    "data": { ... }
+}
+```
+
+---
+
+### 8. Reset Password Pengguna
+
+**Endpoint:**
+```http
+POST /api/admin/users/reset-password/{id}
+```
+
+**Akses:** Admin, Guru
+
+Mereset password pengguna ke nilai default.
+
+**Response Sukses (200 OK):**
+```json
+{
+    "status": true,
+    "message": "User password reset successfully",
+    "data": { ... }
+}
+```
+
+---
+
+### 9. Mendapatkan Semua Siswa
+
+**Endpoint:**
+```http
+GET /api/admin/students
+```
+
+**Akses:** Admin, Guru
+
+Mengembalikan semua pengguna dengan role `siswa`.
+
+**Response Sukses (200 OK):**
+```json
+{
+    "status": true,
+    "message": "Success",
+    "data": [
+        {
+            "id": 3,
+            "name": "Andi Pratama",
+            "email": "andi@example.com",
+            "role": "siswa",
+            "status": "aktif"
+        }
+    ]
+}
+```
+
+---
+
+### 10. Mendapatkan Siswa Alumni/Lulus
+
+**Endpoint:**
+```http
+GET /api/admin/alumni
+```
+
+**Akses:** Admin
+
+Mengembalikan semua siswa dengan status `lulus`.
+
+**Response Sukses (200 OK):**
+```json
+{
+    "status": true,
+    "message": "Success",
+    "data": [
+        {
+            "id": 5,
+            "name": "Dewi Lestari",
+            "email": "dewi@example.com",
+            "role": "siswa",
+            "status": "lulus"
+        }
+    ]
+}
+```
+
+---
+
+### 11. Mendapatkan Semua Guru
+
+**Endpoint:**
+```http
+GET /api/admin/teachers
+```
+
+**Akses:** Admin, Guru
+
+Mengembalikan semua pengguna dengan role `guru`.
+
+**Response Sukses (200 OK):**
+```json
+{
+    "status": true,
+    "message": "Success",
+    "data": [
+        {
+            "id": 2,
+            "name": "Budi Santoso",
+            "email": "budi@example.com",
+            "role": "guru",
+            "status": "aktif"
+        }
+    ]
+}
+```
+
+---
+
+### 12. Mendapatkan Jawaban Semua Siswa (untuk Admin)
+
+**Endpoint:**
+```http
+GET /api/admin/users/all-student-answers/{idstudent}
+```
+
+**Akses:** Admin, Guru
+
+**Response Sukses (200 OK):**
+```json
+{
+    "status": true,
+    "message": "Success",
+    "data": [ ... ]
+}
+```
+
+---
+
+### 13. Mendapatkan Detail Jawaban Siswa (untuk Admin)
+
+**Endpoint:**
+```http
+GET /api/admin/users/student-answers/{idstudent}/{idanswer}
+```
+
+**Akses:** Admin, Guru
+
+---
+
+### 14. Dashboard Admin
+
+**Endpoint:**
+```http
+GET /api/admin/dashboard/admin
+```
+
+**Akses:** Admin
+
+Mengembalikan data statistik keseluruhan sistem.
+
+**Response Sukses (200 OK):**
+```json
+{
+    "status": true,
+    "message": "Success",
+    "data": { ... }
+}
+```
+
+---
+
+### 15. Dashboard Guru
+
+**Endpoint:**
+```http
+GET /api/guru/dashboard/teacher
+```
+
+**Akses:** Guru
+
+Mengembalikan data ringkasan kelas dan siswa yang diampu oleh guru yang login.
+
+---
+
+---
+
+## Endpoints — Siswa
+
+### 1. Mendapatkan Profil Sendiri
+
+**Endpoint:**
 ```http
 GET /api/users/profile
 ```
 
-#### Success Response (200 OK)
+**Akses:** Siswa, Guru, Admin
+
+**Response Sukses (200 OK):**
 ```json
 {
     "status": true,
     "message": "Success",
     "data": {
-        "id": 1,
-        "first_name": "John",
-        "last_name": "Doe",
-        "email": "john@example.com",
-        "birth_date": "1990-01-01",
-        "gender": "male",
-        "role": "user",
-        "created_at": "2024-03-21 10:30:00",
-        "updated_at": "2024-03-21 10:30:00"
+        "id": 3,
+        "name": "Andi Pratama",
+        "email": "andi@example.com",
+        "role": "siswa",
+        "status": "aktif",
+        "created_at": "2025-05-17T10:00:00.000000Z",
+        "updated_at": "2025-05-17T10:00:00.000000Z"
     }
 }
 ```
 
-### 2. Change Password
+---
 
-#### Endpoint
+### 2. Mengupdate Profil Sendiri
+
+**Endpoint:**
 ```http
-PUT /api/users/password
+PUT /api/users/profile/{id}
 ```
 
-#### Request Body
+**Akses:** Siswa
+
+**Request Body:**
 ```json
 {
-    "current_password": "oldpassword123",
-    "password": "newpassword123",
-    "password_confirmation": "newpassword123"
+    "name": "Andi Pratama Baru",
+    "email": "andi.baru@example.com"
 }
 ```
 
-#### Success Response (200 OK)
+---
+
+### 3. Mengupdate Password Sendiri
+
+**Endpoint:**
+```http
+PUT /api/users/password/{id}
+```
+
+**Akses:** Siswa
+
+**Request Body:**
+```json
+{
+    "current_password": "password_lama",
+    "password": "password_baru123",
+    "password_confirmation": "password_baru123"
+}
+```
+
+**Response Sukses (200 OK):**
 ```json
 {
     "status": true,
     "message": "Password updated successfully",
-    "data": {
-        "id": 1,
-        "first_name": "John",
-        "last_name": "Doe",
-        "email": "john@example.com",
-        "updated_at": "2024-03-21 10:35:00"
-    }
+    "data": { ... }
 }
 ```
 
-## Error Responses
-
-### Unauthorized (401 Unauthorized)
+**Response Error:**
 ```json
+// 400 - Password saat ini salah
 {
     "status": false,
-    "message": "Unauthorized. Please login first."
+    "message": "Current password is incorrect"
 }
 ```
 
-### Forbidden (403 Forbidden)
+---
+
+### 4. Mendapatkan Kelas Siswa
+
+**Endpoint:**
+```http
+GET /api/users/classes
+```
+
+**Akses:** Siswa
+
+Mengembalikan kelas tempat siswa yang sedang login terdaftar.
+
+**Response Sukses (200 OK):**
 ```json
 {
-    "status": false,
-    "message": "Access Denied. You are not authorized."
+    "status": true,
+    "message": "Success",
+    "data": [
+        {
+            "id": 1,
+            "name": "Kelas 5 A",
+            "level": "kelas 5",
+            "semester": "genap",
+            "academic_year": "2025/2026"
+        }
+    ]
 }
 ```
 
-### Not Found (404 Not Found)
+---
+
+### 5. Mendapatkan Jawaban Sendiri
+
+**Endpoint:**
+```http
+GET /api/users/student-answers/{id}
+```
+
+**Akses:** Siswa
+
+Mendapatkan jawaban siswa berdasarkan ID kuis atau soal tertentu.
+
+---
+
+### 6. Mendapatkan Semua Jawaban Sendiri
+
+**Endpoint:**
+```http
+GET /api/users/all-student-answers
+```
+
+**Akses:** Siswa
+
+Mendapatkan semua jawaban yang pernah dikirim oleh siswa yang login.
+
+---
+
+## Struktur Data Pengguna
+
+| Field | Tipe | Deskripsi |
+|-------|------|-----------|
+| `id` | integer | ID unik pengguna |
+| `name` | string | Nama lengkap pengguna |
+| `email` | string | Alamat email (unik) |
+| `role` | string | Peran: `siswa`, `guru`, `admin` |
+| `status` | string | Status akun: `aktif`, `lulus` |
+| `created_at` | datetime | Waktu akun dibuat |
+| `updated_at` | datetime | Waktu akun terakhir diperbarui |
+
+---
+
+## Response Error Umum
+
 ```json
+// 401 - Tidak Terautentikasi
+{
+    "status": false,
+    "message": "Unauthenticated."
+}
+
+// 403 - Akses Ditolak
+{
+    "status": false,
+    "message": "Access Denied."
+}
+
+// 404 - Data Tidak Ditemukan
 {
     "status": false,
     "message": "User not found"
 }
-```
 
-### Validation Error (422 Unprocessable Entity)
-```json
+// 422 - Validasi Gagal
 {
     "status": false,
     "message": "Validation failed",
     "errors": {
-        "email": ["The email field is required."],
-        "password": ["The password must be at least 8 characters."],
-        // ... other validation errors
+        "email": ["The email has already been taken."]
     }
 }
 ```
-
-## Important Notes
-
-1. **Authentication**
-   - All endpoints require authentication via Bearer token
-   - Admin endpoints require 'admin' role
-   - User endpoints require 'user' role
-
-2. **Validation Rules**
-   - Email must be unique and valid format
-   - Password minimum length: 8 characters
-   - Gender must be either 'male' or 'female'
-   - Birth date must be a valid date format
-   - All fields are required unless specified otherwise
-
-3. **Response Format**
-   - All responses follow the standard format:
-     ```json
-     {
-         "status": boolean,
-         "message": string,
-         "data": object|array|null,
-         "errors": object|null
-     }
-     ```
-
-4. **Timezone**
-   - All timestamps are in Asia/Jakarta timezone (WIB/GMT+7)
-
-5. **HTTP Status Codes**
-   - 200: Success
-   - 201: Created
-   - 400: Bad Request
-   - 401: Unauthorized
-   - 403: Forbidden
-   - 404: Not Found
-   - 422: Validation Error
-   - 500: Server Error

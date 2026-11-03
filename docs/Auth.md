@@ -1,204 +1,209 @@
-# Authentication API Documentation
+# Dokumentasi API Autentikasi (Auth)
+
+API ini digunakan untuk autentikasi pengguna sistem Sinaumatika, meliputi login, registrasi, dan logout.
 
 ## Request Headers
+
 ```http
 Accept: application/json
 Content-Type: application/json
-Authorization: Bearer {token}  // For protected routes
+Authorization: Bearer {token}  // Untuk route yang membutuhkan autentikasi
 ```
 
-## 1. Login
+---
 
-### Endpoint
+## Endpoints
+
+### 1. Login
+
+**Endpoint:**
 ```http
 POST /api/auth/login
 ```
 
-### Request Body
+**Akses:** Publik (tidak perlu token)
+
+**Request Body:**
 ```json
 {
-    "email": "dosen@example.com",
-    "password": "password"
+    "email": "guru@example.com",
+    "password": "password123"
 }
 ```
 
-### Success Response (200 OK)
+**Response Sukses (200 OK):**
 ```json
 {
     "status": true,
-    "message": "Login successful",
+    "message": "Success",
     "data": {
         "user": {
             "id": 1,
-            "first_name": "Regular",
-            "last_name": "Dosen",
-            "email": "dosen@example.com",
-            "birth_date": "2003-01-09",
-            "gender": "Female",
-            "role": "dosen",
-            "created_at": "2024-03-21 10:30:00",
-            "updated_at": "2024-03-21 10:30:00"
+            "name": "Budi Santoso",
+            "email": "guru@example.com",
+            "role": "guru",
+            "status": "aktif",
+            "created_at": "2025-05-17T10:00:00.000000Z",
+            "updated_at": "2025-05-17T10:00:00.000000Z"
         },
-        "token": "1|p6IghECGCVRMwAPCo1OptU7SQ0y0ykzd9pUWL4py",
-        "token_type": "Bearer",
-        "expires_at": "2024-03-28 10:30:00"
+        "token": "1|p6IghECGCVRMwAPCo1OptU7SQ0y0ykzd9pUWL4py"
     }
 }
 ```
 
-### Error Responses
+**Response Error:**
 
-#### Invalid Credentials (401 Unauthorized)
 ```json
+// 422 - Kredensial Salah
 {
     "status": false,
-    "message": "Email or password is incorrect"
+    "message": "Invalid credentials"
 }
 ```
 
-#### Validation Error (422 Unprocessable Entity)
-```json
-{
-    "status": false,
-    "message": "Validation failed",
-    "errors": {
-        "email": ["The email field is required."],
-        "password": ["The password field is required."]
-    }
-}
-```
+---
 
-## 2. Register
+### 2. Register
 
-### Endpoint
+**Endpoint:**
 ```http
 POST /api/auth/register
 ```
 
-### Request Body
+**Akses:** Publik (tidak perlu token)
+
+**Request Body:**
 ```json
 {
-    "first_name": "Jhon",
-    "last_name": "Doe",
-    "email": "jhondoe@example.com",
-    "birth_date": "2003-01-09",
-    "gender": "male",
+    "name": "Andi Pratama",
+    "email": "andi@example.com",
     "password": "password123",
-    "password_confirmation": "password123"
+    "password_confirmation": "password123",
+    "role": "siswa"
 }
 ```
 
-### Success Response (200 OK)
+| Field | Tipe | Wajib | Keterangan |
+|-------|------|-------|-----------|
+| `name` | string | Ya | Nama lengkap pengguna |
+| `email` | string | Ya | Email unik, format email valid |
+| `password` | string | Ya | Minimal 8 karakter |
+| `password_confirmation` | string | Ya | Harus sama dengan `password` |
+| `role` | string | Tidak | Nilai: `siswa`, `guru`, `admin`. Default: `siswa` |
+
+**Response Sukses (200 OK):**
 ```json
 {
     "status": true,
+    "message": "User registered successfully",
     "data": {
-        "first_name": "Jhon",
-        "last_name": "Doe",
-        "email": "jhondoe@example.com",
-        "role": "user"
+        "name": "Andi Pratama",
+        "email": "andi@example.com",
+        "role": "siswa"
     }
 }
 ```
 
-### Error Responses
+**Response Error:**
 
-#### Email Already Exists (400 Bad Request)
 ```json
-{
-    "status": false,
-    "message": "Email already exists"
-}
-```
-
-#### Validation Error (422 Unprocessable Entity)
-```json
+// 422 - Validasi Gagal
 {
     "status": false,
     "message": "Validation failed",
     "errors": {
-        "email": ["The email field is required."],
-        "first_name": ["The first name field is required."],
-        "last_name": ["The last name field is required."],
-        "birth_date": ["The birth date field is required."],
-        "gender": ["The gender field must be either male or female."],
-        "password": ["The password must be at least 8 characters."],
-        "password_confirmation": ["The password confirmation does not match."]
+        "email": ["The email has already been taken."],
+        "password": ["The password must be at least 8 characters."]
     }
 }
 ```
 
-## 3. Logout
+---
 
-### Endpoint
+### 3. Logout
+
+**Endpoint:**
 ```http
 DELETE /api/auth/logout
 ```
 
-### Headers
+**Akses:** Semua pengguna yang sudah login (membutuhkan token)
+
+**Headers:**
 ```http
 Authorization: Bearer {token}
 ```
 
-### Success Response (200 OK)
+**Response Sukses (200 OK):**
 ```json
 {
     "status": true,
-    "message": "Logout successful"
+    "message": "Success",
+    "data": []
 }
 ```
 
-### Error Responses
+**Response Error:**
 
-#### Unauthorized (401 Unauthorized)
 ```json
+// 401 - Tidak Terautentikasi
 {
     "status": false,
-    "message": "Unauthorized. Please login first."
+    "message": "Unauthenticated."
 }
 ```
 
-#### Invalid Token (401 Unauthorized)
+---
+
+## Struktur Data Pengguna (User)
+
+| Field | Tipe | Deskripsi |
+|-------|------|-----------|
+| `id` | integer | ID unik pengguna |
+| `name` | string | Nama lengkap pengguna |
+| `email` | string | Alamat email (unik) |
+| `role` | enum | Peran: `siswa`, `guru`, `admin` |
+| `status` | enum | Status akun: `aktif`, `lulus` |
+| `created_at` | datetime | Waktu akun dibuat |
+| `updated_at` | datetime | Waktu akun terakhir diperbarui |
+
+---
+
+## Catatan Penting
+
+### Token Autentikasi
+- Token menggunakan **Laravel Sanctum** (Bearer Token)
+- Token **expire dalam 1 hari** (timezone: Asia/Jakarta / WIB / GMT+7)
+- Setiap login baru akan menghapus semua token lama milik pengguna tersebut
+- Token akan otomatis tidak valid setelah logout atau kadaluarsa
+- Middleware `check.token.expiration` memvalidasi token di setiap request
+
+### Peran Pengguna (Role)
+| Role | Keterangan |
+|------|-----------|
+| `siswa` | Siswa — dapat mengikuti kuis dan melihat nilai sendiri |
+| `guru` | Guru — dapat mengelola kelas, pelajaran, soal, dan kuis |
+| `admin` | Admin — akses penuh ke seluruh sistem |
+
+### Format Response Standar
+Semua response mengikuti format berikut:
 ```json
 {
-    "status": false,
-    "message": "Invalid or expired token"
+    "status": true | false,
+    "message": "Pesan deskriptif",
+    "data": { ... } | [ ... ] | null,
+    "errors": { ... } | null
 }
 ```
 
-## Important Notes
-
-1. **Token Expiration**
-   - Access tokens expire after 7 days
-   - Timezone used: Asia/Jakarta (WIB/GMT+7)
-   - Expired tokens are automatically invalidated
-
-2. **Authentication**
-   - All protected routes require a valid Bearer token
-   - Include the token in the Authorization header
-   - Tokens are invalidated on logout
-
-3. **Validation Rules**
-   - Email must be unique and valid format
-   - Password minimum length: 8 characters
-   - Gender must be either 'male' or 'female'
-   - Birth date must be a valid date format
-   - All fields are required unless specified otherwise
-
-4. **Response Format**
-   - All responses follow the standard format:
-     ```json
-     {
-         "status": boolean,
-         "message": string,
-         "data": object|null,
-         "errors": object|null
-     }
-     ```
-
-5. **HTTP Status Codes**
-   - 200: Success
-   - 400: Bad Request
-   - 401: Unauthorized
-   - 422: Validation Error
-   - 500: Server Error
+### HTTP Status Code
+| Kode | Keterangan |
+|------|-----------|
+| 200 | Sukses |
+| 201 | Berhasil dibuat |
+| 400 | Bad Request |
+| 401 | Tidak terautentikasi |
+| 403 | Akses ditolak (role tidak sesuai) |
+| 404 | Data tidak ditemukan |
+| 422 | Validasi gagal |
+| 500 | Server error |
