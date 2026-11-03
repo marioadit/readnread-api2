@@ -19,7 +19,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:5173', 'https://lms.pendidikan.cloud', 'https://lms.sinaumatika.id'],
+    'allowed_origins' => ['http://localhost:5173', 'http://localhost:5170', 'https://lms.pendidikan.cloud', 'https://lms.sinaumatika.id'],
 
     'allowed_origins_patterns' => [],
 
