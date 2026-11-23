@@ -19,7 +19,7 @@ class ClassRepository implements ClassRepositoryInterface
 
     public function getAll()
     {
-        return $this->model->with('teacher')->orderBy('level', 'asc')->orderBy('name', 'asc')->get();
+        return $this->model->with('teacher')->withCount('students')->orderBy('level', 'asc')->orderBy('name', 'asc')->get();
     }
 
     public function getById($id)
