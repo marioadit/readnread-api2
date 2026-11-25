@@ -208,7 +208,13 @@ class UserRepository implements UserRepositoryInterface
 
     public function getUserTeacher()
     {
-        $data = $this->model->with('classesTeaching')->where('role', 'guru')->get();
+        $data = $this->model
+            ->with('classesTeaching')
+            ->where('role', 'guru')
+            ->get()
+            ->sortBy(fn ($guru) => $guru->classesTeaching->min('id') ?? 99999)
+            ->values();
+
         Log::info($data);
         return [
             'status' => true,
